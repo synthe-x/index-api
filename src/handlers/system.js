@@ -9,3 +9,5 @@ function handleNewSafeCRatio(minCRatio){
     // update safecratio
     // save system
 }
+
+export function handleExchange(poolIndex, src, srcAmount)

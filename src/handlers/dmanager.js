@@ -1,0 +1,3 @@
+export function handleNewSynthAsset(name, symbol, _oracle, _interestRateModel) {
+    // ...
+}

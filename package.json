@@ -13,6 +13,7 @@
     "fs": "^0.0.1-security",
     "http-errors": "~1.6.3",
     "jade": "~1.11.0",
+    "mongoose": "^6.6.5",
     "morgan": "~1.9.1",
     "nodemon": "^2.0.20",
     "tronweb": "^4.4.0"
