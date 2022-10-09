@@ -21,7 +21,6 @@ async function getCurrentEventLog({contractAddress, abi, handlers}) {
 
     try {
         let instance = await tronWeb.contract(abi, contractAddress);
-        let _fingerprint = "";
         let total_event = [];
         for (let i in abi) {
             if (abi[i].type == "event") {
@@ -29,19 +28,21 @@ async function getCurrentEventLog({contractAddress, abi, handlers}) {
             }
         };
         for (let i in total_event) {
-            await watchEvent(total_event[i], { contractAddress, abi, handlers })
-            // instance[total_event[i]]()
-            // .watch((err, event) => {
-            //     if (err) {
-            //         console.log("Error1", err.message)
-            //         return getCon(contractAddress, abi);
-            //     }
-            //     if (event) {
-            //         if(handlers[event["name"]]){
-            //             handlers[event["name"]](event)
-            //         }
-            //     }
-            // })
+            // await watchEvent(total_event[i], { contractAddress, abi, handlers })
+            console.log("Listening to", total_event[i], "event");
+            instance[total_event[i]]()
+            .watch((err, event) => {
+                if (err) {
+                    console.log("Error1", err.message)
+                    return getCon(contractAddress, abi);
+                }
+                if (event) {
+                    console.log(event);
+                    if(handlers[event["name"]]){
+                        handlers[event["name"]](event)
+                    }
+                }
+            })
             
         }
     }
@@ -51,11 +52,4 @@ async function getCurrentEventLog({contractAddress, abi, handlers}) {
     }
 }
 
-
-async function watchEvent( eventName, { contractAddress, abi, handlers }) {
-    let _instance = await tronWeb.contract(abi, contractAddress);
-    _instance[eventName]().watch((error, event) => {
-        console.log(error, event);
-    })
-}
 module.exports = { Hex_to_B58, getCurrentEventLog }

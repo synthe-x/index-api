@@ -160,7 +160,7 @@ function ContractTransaction ({contractAddress, abi, handlers}){
                 _getContractTransection();
             }          
             else{
-                await getCurrentEventLog(contractAddress,abi)
+                getCurrentEventLog({contractAddress, abi, handlers})
             }
                
         }
