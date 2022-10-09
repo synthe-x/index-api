@@ -2,6 +2,7 @@ const TronWeb = require('tronweb');
 // const allEvent = require('../model/allEvent');
 const { getCon } = require('./getCon')
 
+const {forkJoin} = require('rxjs');
 
 const tronWeb = new TronWeb({
     fullHost: 'https://nile.trongrid.io',
@@ -16,7 +17,7 @@ function Hex_to_B58(hex) {
 
 
 let count = 0;
-async function getCurrentEventLog(contractAddress, abi) {
+async function getCurrentEventLog({contractAddress, abi, handlers}) {
 
     try {
         let instance = await tronWeb.contract(abi, contractAddress);
@@ -27,48 +28,34 @@ async function getCurrentEventLog(contractAddress, abi) {
                 total_event.push(abi[i].name)
             }
         };
-
         for (let i in total_event) {
-
-            instance[total_event[i]]().watch(async (err, event) => {
-
-                if (err) {
-                    console.log("Error1", err.message)
-                    return getCon(contractAddress, abi);
-                }
-                if (event) {
-
-                    let arr = Object.keys(event.result);
-                    for (let i = arr.length / 2; i < arr.length; i++) {
-                        delete event.result[`${arr[i]}`]
-                    }
-                    let obj = {};
-                    obj.name = event.name;
-                    obj.txn_id = event.transaction;
-                    obj.args = event.result;
-                    obj.isCurrent = true;
-
-                    if (event.fingerprint) {
-                        _fingerprint = `https://nile.trongrid.io/v1/contracts/${contractAddress}/transactions?limit=50&only_confirmed=true&order_by=block_timestamp,asc&_fingerprint=${event.fingerprint}`;
-
-                    };
-
-                    obj.req_url = _fingerprint;
-
-                    count++;
-                    console.log(count)
-                    // await allEvent.create(obj);
-                }
-            });
+            await watchEvent(total_event[i], { contractAddress, abi, handlers })
+            // instance[total_event[i]]()
+            // .watch((err, event) => {
+            //     if (err) {
+            //         console.log("Error1", err.message)
+            //         return getCon(contractAddress, abi);
+            //     }
+            //     if (event) {
+            //         if(handlers[event["name"]]){
+            //             handlers[event["name"]](event)
+            //         }
+            //     }
+            // })
+            
         }
-
     }
     catch (error) {
         console.log("Error2", error.message)
         return getCon(contractAddress, abi)
     }
-
-
 }
 
+
+async function watchEvent( eventName, { contractAddress, abi, handlers }) {
+    let _instance = await tronWeb.contract(abi, contractAddress);
+    _instance[eventName]().watch((error, event) => {
+        console.log(error, event);
+    })
+}
 module.exports = { Hex_to_B58, getCurrentEventLog }

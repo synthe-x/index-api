@@ -18,19 +18,71 @@ function decode_log_data(data,topics,iface){
         // console.log("Error from decode_log_data", error.message)
         return 
     }
-    
 }
 
 const {handleNewCollateralAsset} = require('./handlers/cManager');
+const {handleNewOracle: handleNewCollateralOracle, handleMinCollateralUpdated} = require("./handlers/collaterals");
+const {handleNewOracle: handleNewSynthOracle , handleNewInterestRateModel} = require("./handlers/synth");
 const {handleNewSynthAsset} = require('./handlers/dManager');
+const {handleDeposit, handleWithdraw, handleExchange, handleBorrow, handleRepay, handleLiquidate} = require('./handlers/system');
+const {handleNewTradingPool, handlePoolEntered, handlePoolExited} = require("./handlers/tradingPool")
 
-
-const _handlers = {
-    "NewSynthAsset(address,address,address)": handleNewSynthAsset,
+const SystemConfig = {
+    contractAddress: getAddress("System"),
+    abi: getABI("System"),
+    handlers: {
+        "NewSynthAsset": handleNewSynthAsset,
+        "NewCollateralAsset": handleNewCollateralAsset,
+        "NewTradingPool": handleNewTradingPool,
+        "NewMinCRatio": handleMinCollateralUpdated,
+        "NewSafeCRatio": handleMinCollateralUpdated,
+        "PoolEntered": handlePoolEntered,
+        "PoolExited": handlePoolExited,
+        "Liquidate": handleLiquidate,
+        "Borrow": handleBorrow,
+        "Repay": handleRepay,
+        "Deposit": handleDeposit,
+        "Withdraw": handleWithdraw,
+        "Exchange": handleExchange,
+    }
 }
 
+const SynthConfig = (contractAddress) => {
+    return {
+        contractAddress,
+        abi: getABI("Synth"),
+        handlers: {
+            "NewOracle(address)": handleNewSynthOracle
+        }
+    }
+}
+
+const DebtTrackerConfig = (contractAddress) => {
+    return{
+        contractAddress,
+        abi: getABI("DebtTracker"),
+        handlers: {
+            "event AccureInterest": handleAccureInterest,
+            "event InterestRateModelUpdated": handleNewInterestRateModel,
+        }
+    }
+    
+}
+
+const CollateralConfig = (contractAddress) => {
+    return {
+        contractAddress,
+        abi: getABI("Collateral"),
+        handlers: {
+            "NewOracle": handleNewCollateralOracle,
+            "MinCollateralUpdated": handleMinCollateralUpdated
+        }
+    }
+}
+
+
 let count = 0;
-function ContractTransaction (contractAddress, abi, handlers = _handlers){
+function ContractTransaction ({contractAddress, abi, handlers}){
     let req_url = `https://nile.trongrid.io/v1/contracts/${contractAddress}/transactions?order_by=block_timestamp,asc&limit=50&only_confirmed=true`;
 
     let isLastPage = false;
@@ -83,56 +135,32 @@ function ContractTransaction (contractAddress, abi, handlers = _handlers){
                         
                              
                     if(encoded_data)
-                    for(let j = 0; j <encoded_data.length; j++ ){
-                        count++
-                        const topics_from_log = encoded_data[j].topics;
-                        const data_from_log = "0x"+encoded_data[j].data;
-                        let modified_topics = []
-                        for(let k = 0; k < topics_from_log.length; k++){
-                            let updated = "0x"+topics_from_log[k];
-                            modified_topics.push(updated);
-                        };
-                       
-                        const decoded_data = decode_log_data( data_from_log, modified_topics,iface);
+                        for(let j = 0; j <encoded_data.length; j++ ){
+                            count++
+                            const topics_from_log = encoded_data[j].topics;
+                            const data_from_log = "0x"+encoded_data[j].data;
+                            let modified_topics = []
+                            for(let k = 0; k < topics_from_log.length; k++){
+                                let updated = "0x"+topics_from_log[k];
+                                modified_topics.push(updated);
+                            };
                         
-                         if(decoded_data){
-                            if(handlers[decoded_data["signature"]]){
-                                handlers[decoded_data["signature"]](decoded_data)
+                            const decoded_data = decode_log_data( data_from_log, modified_topics,iface);
+                            
+                            if(decoded_data){
+                                if(handlers[decoded_data["name"]]){
+                                    handlers[decoded_data["name"]](decoded_data)
+                                }
                             }
-
-                            // if(total_event.includes(decoded_data.name)){
-                            //     let arr = [];
-                            //     let argsLength = decoded_data.args.length;
-
-                            //     for(let i = 0 ; i <argsLength; i++){
-                            //         arr.push(decoded_data.args[i])
-                            //     }
-
-                            //     let obj = {};
-                            //         if(decoded_data.name){
-                            //             obj.name = decoded_data.name;
-                            //         }
-                            //         if(decoded_data.args){
-                            //             obj.args = arr
-                            //         }
-                            //     obj.txn_id = txn_id;
-                            //     obj.con_add = contractAddress;
-                            //     obj.req_url = req_url;
-                               
-                            //     // allEvent.create(obj);
-                                                               
-                            // }
-                         }
-                        
-                    }   
-                }          
+                        }
+                }         
             }
     
             if(isLastPage == false){
                 _getContractTransection();
             }          
             else{
-                getCurrentEventLog(contractAddress,abi)
+                await getCurrentEventLog(contractAddress,abi)
             }
                
         }
@@ -150,5 +178,5 @@ function ContractTransaction (contractAddress, abi, handlers = _handlers){
    
 }
 
-ContractTransaction(getAddress("System"), getABI("System"))
+ContractTransaction(SystemConfig)
 module.exports = {ContractTransaction}

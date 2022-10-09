@@ -1,15 +1,38 @@
-function handleNewMinCRatio(minCRatio){
+function handleNewMinCRatio(decodedData){
     // get system
     // update mincratio
     // save system
 }
 
-function handleNewSafeCRatio(minCRatio){
+function handleNewSafeCRatio(decodedData){
     // get system
     // update safecratio
     // save system
 }
 
-export function handleExchange(poolIndex, user, src, srcAmount, dst){
+function handleExchange(decodedData){
     // ...
 }
+
+function handleBorrow(decodedData) {
+
+}
+
+function handleRepay(decodedData) {
+
+}
+
+function handleDeposit(decodedData) {
+
+}
+
+function handleWithdraw(decodedData) {
+
+}
+
+
+function handleLiquidate(decodedData) {
+
+}
+
+module.exports = {handleNewMinCRatio, handleNewSafeCRatio, handleExchange, handleLiquidate, handleBorrow, handleRepay, handleDeposit, handleWithdraw}
