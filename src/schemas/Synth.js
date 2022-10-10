@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-export default SynthSchema = new mongoose.Schema({
+const SynthSchema = new mongoose.Schema({
     id: String,
     name: String,
     symbol: String,
@@ -9,3 +9,5 @@ export default SynthSchema = new mongoose.Schema({
     borrowIndex: Number,
     interestRateModel: String,
 });
+
+module.exports = SynthSchema;

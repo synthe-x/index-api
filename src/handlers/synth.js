@@ -6,4 +6,8 @@ function handleNewInterestRateModel(decodedData){
 
 }
 
-module.exports = {handleNewOracle, handleNewInterestRateModel}
+function handleAccureInterest(decodedData){
+
+}
+
+module.exports = {handleNewOracle, handleNewInterestRateModel, handleAccureInterest}

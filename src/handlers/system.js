@@ -1,4 +1,6 @@
-function handleNewMinCRatio(decodedData){
+const {System} = require("../db");
+
+async function handleNewMinCRatio(decodedData){
     // get system
     // update mincratio
     // save system
@@ -27,9 +29,9 @@ function handleDeposit(decodedData) {
 }
 
 function handleWithdraw(decodedData) {
-
+    // get user
+    
 }
-
 
 function handleLiquidate(decodedData) {
 

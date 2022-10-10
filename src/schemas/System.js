@@ -1,8 +1,10 @@
 const mongoose = require("mongoose");
 
-export default SystemSchema = new mongoose.Schema({
-    id: String,
-    address: String,
-    minCollateralRatio: Number,
+const SystemSchema = new mongoose.Schema({
+    id: String, // 1
+    address: String, // contract address
+    minCollateralRatio: Number, 
     safeCollateralRatio: Number,
 });
+
+module.exports = SystemSchema;

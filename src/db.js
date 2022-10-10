@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
-import SystemSchema from "./schemas/System.js";
-import UserSchema from "./schemas/User.js";
-import UserSynthSchema from "./schemas/UserSynth.js";
-import UserCollateralSchema from "./schemas/UserCollateral.js";
-import CollateralSchema from "./schemas/Collateral.js";
-import SynthSchema from "./schemas/Synth.js";
-import UserTradingSchema from "./schemas/UserTrading.js";
-import TradingPool from "./schemas/TradingPool.js";
+const SystemSchema = require("./schemas/System.js");
+const UserSchema = require("./schemas/User.js");
+const UserSynthSchema = require("./schemas/UserSynth.js");
+const UserCollateralSchema = require("./schemas/UserCollateral.js");
+const CollateralSchema = require("./schemas/Collateral.js");
+const SynthSchema = require("./schemas/Synth.js");
+const UserTradingSchema = require("./schemas/UserTrading.js");
+const TradingPoolSchema = require("./schemas/TradingPool.js");
 
 const System = mongoose.model('System', SystemSchema);
 const User = mongoose.model('User', UserSchema);
@@ -20,3 +20,5 @@ const TradingPool = mongoose.model('TradingPool', TradingPoolSchema);
 async function connect() {    
     await mongoose.connect('mongodb://root:password@localhost:27017/test');
 }
+
+module.exports = {System, User, UserDebt, UserCollateral, Collateral, Synth, UserTrading, TradingPool, connect};

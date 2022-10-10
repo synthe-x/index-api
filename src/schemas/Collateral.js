@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-export default CollateralSchema = new mongoose.Schema({
+const CollateralSchema = new mongoose.Schema({
     id: String,
     name: String,
     symbol: String,
@@ -8,3 +8,5 @@ export default CollateralSchema = new mongoose.Schema({
     oracle: String,
     minCollateral: Number,
 });
+
+module.exports = CollateralSchema;
