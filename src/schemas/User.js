@@ -1,10 +1,12 @@
 const mongoose = require("mongoose");
 
 const UserSchema = new mongoose.Schema({
-    id: String,
+    user_id : String,
     collaterals: [String],
     synths: [String],
     trading: [String],
-});
+},
+{ timestamps: true }
+);
 
 module.exports = UserSchema;

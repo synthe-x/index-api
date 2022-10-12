@@ -9,5 +9,3 @@ class DebtPosition {
     debtPrinciple;
     debtIndex;
 }
-
-class 

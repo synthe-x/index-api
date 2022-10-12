@@ -1,10 +1,14 @@
 const mongoose = require("mongoose");
 
 const UserSynth = new mongoose.Schema({
-    id: String,
-    debt: String,
-    principle: Number,
+    borrows : [String],
+    repays : [String],
+    user_id : String,
+    synth_id :String,
+    principal: Number,
     interestIndex: Number
-});
+},
+{ timestamps: true }
+);
 
 module.exports = UserSynth;
