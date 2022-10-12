@@ -6,8 +6,12 @@ const SynthSchema = new mongoose.Schema({
     symbol: String,
     price: Number,
     oracle: String,
-    borrowIndex: Number,
+    borrowIndex: String,
     interestRateModel: String,
+    accrualTimestamp: Number,
+    totalBorrowed: Number,
+    debtTracker_id : String
+
 },
 { timestamps: true }
 );

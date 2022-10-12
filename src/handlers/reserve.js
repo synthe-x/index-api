@@ -1,5 +1,5 @@
 function handleExchange(decodedData) {
-
+// console.log("exchange",decodedData)
 }
 
 function handleBorrow(decodedData) {

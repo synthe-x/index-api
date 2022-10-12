@@ -31,7 +31,7 @@ async function handleNewCollateralAsset(decodedData, arguments) {
         let cAsset = await cManager.methods.assetToCAsset(decodedData.args[0]).call();
         console.log("-- cAsset --", tronWeb.address.fromHex(cAsset));
         syncAndListen(CollateralConfig(tronWeb.address.fromHex(cAsset)));
-        
+
         if (decodedData.args[0] == "0x0000000000000000000000000000000000000000" ||
         decodedData.args[0] == "0x00000000000000000000000000000000000f54e9") {
             let name = "Tron";
@@ -72,7 +72,7 @@ async function handleNewCollateralAsset(decodedData, arguments) {
         arguments.coll_address = asset_address;
 
         let creatCollateral = await Collateral.create(arguments);
-        console.log(creatCollateral);
+    
     }
     catch (error) {
         console.log("Error", error.message, error);

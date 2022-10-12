@@ -61,10 +61,11 @@ async function listen({ contractAddress, abi, handlers }) {
                             txn_id: event.transaction,
                             block_timestamp: event.timestamp,
                             block_number: event.block,
-                            index: 0
+                            index: 0,
+                            address : event.contract
                         }
 
-                        console.log(event);
+                        // console.log(event);
                         if (handlers[event["name"]] && event.result != undefined) {
                             handlers[event["name"]](event, arguments)
                         }
@@ -117,7 +118,7 @@ function syncAndListen({ contractAddress, abi, handlers }) {
             //     console.log("data",data);
             //     // console.log(resp)
             // }
-        
+
             if (data) {
                 for (let i = 0; i < data.length; i++) {
                     let txn_id = data[i].txID;
@@ -131,13 +132,13 @@ function syncAndListen({ contractAddress, abi, handlers }) {
                         encoded_data = resp_1.data.log;
                         // console.log("encoded_data",encoded_data)
                     }
-                    
-                    if (encoded_data)
 
+                    if (encoded_data) {
                         for (let j = 0; j < encoded_data.length; j++) {
                             const index = j;
                             const topics_from_log = encoded_data[j].topics;
                             const data_from_log = "0x" + encoded_data[j].data;
+                            const address = "0x" + encoded_data[j].address
                             let modified_topics = []
                             for (let k = 0; k < topics_from_log.length; k++) {
                                 let updated = "0x" + topics_from_log[k];
@@ -147,19 +148,21 @@ function syncAndListen({ contractAddress, abi, handlers }) {
                                 txn_id: txn_id,
                                 block_timestamp: block_timestamp,
                                 block_number: block_number,
-                                index: index
+                                index: index,
+                                address: address
                             }
-                           
+
                             const decoded_data = await decode_log_data(data_from_log, modified_topics, iface);
 
                             if (decoded_data && decoded_data.args != undefined) {
 
-                                console.log("decoded data", decoded_data.name, decoded_data.args) 
+                                // console.log("decoded data", decoded_data.name, decoded_data) 
                                 if (handlers[decoded_data["name"]]) {
                                     handlers[decoded_data["name"]](decoded_data, arguments)
                                 }
                             }
                         }
+                    }
                 }
             }
 

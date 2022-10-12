@@ -4,7 +4,7 @@ const UserSchema = new mongoose.Schema({
     user_id : String,
     collaterals: [String],
     synths: [String],
-    trading: [String],
+    tradings: [String],
 },
 { timestamps: true }
 );

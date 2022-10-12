@@ -5,9 +5,9 @@ const { userDetails } = require("./controllers/userController");
 const { getAllCollateral, getAllSynth } = require("./controllers/systemController");
 
 connect();
-syncAndListen(SystemConfig);
+// syncAndListen(SystemConfig);
 
-// userDetails("TTvnhvkLDqhdXtAGPfCQfPR7ffE8uPVSe6");
+userDetails("TTvnhvkLDqhdXtAGPfCQfPR7ffE8uPVSe6");
 // getAllCollateral();
 // getAllSynth();
 // TTvnhvkLDqhdXtAGPfCQfPR7ffE8uPVSe6

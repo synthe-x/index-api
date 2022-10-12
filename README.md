@@ -96,3 +96,90 @@ decoded data LogDescription {
 }
 
 //////////////////////////////////////////////////////////////////
+
+
+decoded data Exchange {
+  txn_id: '7cf19d2fc3aa8258305acc1f56fcc55f700f6481ed66f
+ad6b2840b0bb7281bc7',
+  block_timestamp: '1665554823000',
+  block_number: '30624126',
+  index: 3,
+  address: '0x5b7a14d93db1325b21d0da6bceaf5ac0454a7384' 
+} LogDescription {
+  eventFragment: {
+    name: 'Exchange',
+    anonymous: false,
+    inputs: [ [ParamType], [ParamType], [ParamType], [Pa
+ramType], [ParamType] ],
+    type: 'event',
+    _isFragment: true,
+    constructor: [Function: EventFragment] {
+      from: [Function (anonymous)],
+      fromObject: [Function (anonymous)],
+      fromString: [Function (anonymous)],
+      isEventFragment: [Function (anonymous)]
+    },
+    format: [Function (anonymous)]
+  },
+  name: 'Exchange',
+  signature: 'Exchange(uint256,address,address,uint256,a
+ddress)',
+  topic: '0xc7abb3d8af17d2db489ffd7513969405b9aa490af2ed
+e6b24a9c151042c95edd',
+  args: [
+    BigNumber { _hex: '0x01', _isBigNumber: true },     
+    '0xC4Fd26C420b8b5D0a5DC09AD45169e21643D5e17',       
+    '0xc598901d393F8908ce61840e51D795daF9660677',       
+    BigNumber { _hex: '0x8ac7230489e80000', _isBigNumber
+: true },
+    '0x81bA84f0830af162a578A7E3844F1B99E7c40075',       
+    pool: BigNumber { _hex: '0x01', _isBigNumber: true }
+,
+    account: '0xC4Fd26C420b8b5D0a5DC09AD45169e21643D5e17
+',
+    src: '0xc598901d393F8908ce61840e51D795daF9660677',  
+    srcAmount: BigNumber { _hex: '0x8ac7230489e80000', _
+isBigNumber: true },
+    dst: '0x81bA84f0830af162a578A7E3844F1B99E7c40075'   
+  ]
+}
+
+
+////////////////////////////////////////////////////////////////
+
+PoolEntered LogDescription {
+  eventFragment: {
+    name: 'PoolEntered',
+    anonymous: false,
+    inputs: [ [ParamType], [ParamType], [ParamType], [P
+aramType] ],
+    type: 'event',
+    _isFragment: true,
+    constructor: [Function: EventFragment] {
+      from: [Function (anonymous)],
+      fromObject: [Function (anonymous)],
+      fromString: [Function (anonymous)],
+      isEventFragment: [Function (anonymous)]
+    },
+    format: [Function (anonymous)]
+  },
+  name: 'PoolEntered',
+  signature: 'PoolEntered(address,address,address,uint2
+56)',
+  topic: '0xe5ca6288535c5c6c2462c912b4033eade15b8092671
+7896a2d58a2defdeb9128',
+  args: [
+    '0x660619C4f5bb68650EBB3F8458fDB97F27b965EE',      
+    '0xC4Fd26C420b8b5D0a5DC09AD45169e21643D5e17',      
+    '0xc598901d393F8908ce61840e51D795daF9660677',      
+    BigNumber { _hex: '0x3635c9adc5dea00000', _isBigNum
+ber: true },
+    pool: '0x660619C4f5bb68650EBB3F8458fDB97F27b965EE',
+    account: '0xC4Fd26C420b8b5D0a5DC09AD45169e21643D5e1
+7',
+    asset: '0xc598901d393F8908ce61840e51D795daF9660677'
+,
+    amount: BigNumber { _hex: '0x3635c9adc5dea00000', _
+isBigNumber: true }
+  ]
+}

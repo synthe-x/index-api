@@ -1,8 +1,9 @@
-const { System, User, UserDebt, UserCollateral, Collateral, Synth, UserTrading, TradingPool, connect, Deposit, Borrow, Repay, Withdraw } = require("../db");
+const { System, User, UserDebt, UserCollateral, Collateral, Synth, UserTrading, TradingPool, connect, Deposit, Borrow, Repay, Withdraw, Exchange } = require("../db");
 
-const { tronWeb } = require('../utils')
+const { tronWeb, getABI } = require('../utils')
 const Big = require('big.js');
 const { getAddress } = require('../utils');
+const { handleExchangeTrading } = require("./tradingPool");
 
 
 async function handleNewMinCRatio(decodedData, arguments) {
@@ -50,8 +51,64 @@ async function handleNewSafeCRatio(decodedData, arguments) {
     }
 }
 
-function handleExchange(decodedData) {
-    // ...
+async function handleExchange(decodedData, arguments) {
+    
+    try{
+
+        const pool_id = Number(decodedData.args[0]);
+        const user_id = tronWeb.address.fromHex(decodedData.args[1]);
+        const src =  tronWeb.address.fromHex(decodedData.args[2]);
+        const src_amount = `${Number(decodedData.args[3])}`;
+        const dst = tronWeb.address.fromHex(decodedData.args[4]);
+
+        const isDuplicateTxn = await Exchange.findOne(
+            {
+                txn_id: arguments.txn_id,
+                block_number: arguments.block_number,
+                block_timestamp: arguments.block_timestamp,
+                index: arguments.index
+            }
+        );
+
+        if (isDuplicateTxn) {
+            if (isDuplicateTxn.pool_id == pool_id &&
+                isDuplicateTxn.user_id == user_id &&
+                isDuplicateTxn.src_amount == src_amount) {
+                return
+            }
+            else {
+                arguments.index = isDuplicateTxn.index + 1;
+            }
+
+        }
+
+        if(pool_id != '0'){
+            handleExchangeTrading(decodedData, arguments)
+            return;
+        }
+
+
+        let dstOracle = await tronWeb.contract(getABI("SynthERC20"), dst);
+        let srcOracle = await tronWeb.contract(getABI("SynthERC20"), src);
+        let dst_price = (await dstOracle['get_price']().call()).toString() / 10 ** 8;
+        let src_price = (await srcOracle['get_price']().call()).toString() / 10 ** 8;
+       
+        let dst_amount = (src_price * src_amount) / dst_price ;
+        arguments.pool_id = pool_id;
+        arguments.user_id = user_id;
+        arguments.src = src;
+        arguments.src_amount = src_amount;
+        arguments.dst = dst;
+        arguments.dst_amount = dst_amount;
+        await Exchange.create(arguments);
+
+    }
+    catch(error){
+        console.log("Error @ handleExchange", error)
+    }
+
+
+
 }
 
 async function handleBorrow(decodedData, arguments) {
@@ -90,22 +147,22 @@ async function handleBorrow(decodedData, arguments) {
         // get borrowIndex rate from Synth
 
         const synth = await Synth.findOne({ synth_id: asset }).lean();
-        console.log("synth", synth);
-        let borrowIndex;
-        if (synth) {
-            borrowIndex = synth.borrowIndex;
-        } else {
-            borrowIndex = 1;
+        if (!synth) {
+            console.log("synth not found", synth);
+            return
         }
+
+        let borrowIndex = synth.borrowIndex;
+
 
         // UserSynth
         const isUserSynthExist = await UserDebt.findOne({ user_id: account, synth_id: asset }).lean();
         let userDebt_id;
         if (isUserSynthExist) {
-            const principal = ((isUserSynthExist.principal * borrowIndex) / isUserSynthExist.interestIndex) + amount;
+            const principal = ((isUserSynthExist.principal * Number(borrowIndex)) / isUserSynthExist.interestIndex) + amount;
             const updateBorrowing = await UserDebt.findOneAndUpdate(
                 { user_id: account, synth_id: asset },
-                { $set: { principal: principal, interestIndex: borrowIndex }, $addToSet :{borrows : borrow._id} },
+                { $set: { principal: principal, interestIndex: borrowIndex }, $addToSet: { borrows: borrow._id } },
                 { new: true }
             );
 
@@ -118,7 +175,7 @@ async function handleBorrow(decodedData, arguments) {
                 synth_id: asset,
                 principal: amount,
                 interestIndex: borrowIndex,
-                borrows : borrow._id
+                borrows: borrow._id
             }
 
             const creatUserSynth = await UserDebt.create(temp);
@@ -185,23 +242,21 @@ async function handleRepay(decodedData, arguments) {
 
     // get borrowIndex rate from Synth
     const synth = await Synth.findOne({ synth_id: asset }).lean();
-    let borrowIndex
-    if(synth){
-        borrowIndex = synth.borrowIndex;
+
+    if (!synth) {
+        return ("synth not found", synth)
     }
-    else{
-        borrowIndex = 1; 
-    }
-     
+
+    let borrowIndex = synth.borrowIndex;
 
     // User Repay
     const isUserSynthExist = await UserDebt.findOne({ user_id: account, synth_id: asset }).lean();
     let userDebt_id;
     if (isUserSynthExist) {
-        const principal = ((isUserSynthExist.principal * borrowIndex) / isUserSynthExist.interestIndex) - amount;
+        const principal = ((isUserSynthExist.principal * Number(borrowIndex)) / isUserSynthExist.interestIndex) - amount;
         const updateBorrowing = await UserDebt.findOneAndUpdate(
             { user_id: account, synth_id: asset },
-            { $set: { principal: principal, interestIndex: borrowIndex }, $addToSet : {repays : repay._id } },
+            { $set: { principal: principal, interestIndex: borrowIndex }, $addToSet: { repays: repay._id } },
             { new: true }
         )
         userDebt_id = updateBorrowing._id;
@@ -213,7 +268,7 @@ async function handleRepay(decodedData, arguments) {
             synth_id: asset,
             principal: -amount,
             interestIndex: borrowIndex,
-            repays : repay._id
+            repays: repay._id
         }
 
         const creatUserSynth = await UserDebt.create(temp);
