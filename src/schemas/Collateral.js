@@ -10,6 +10,7 @@ const mongoose = require("mongoose");
     symbol: String,
     price: String,
     oracle: String,
+    decimal : String,
     minCollateral: Number,
 },
 { timestamps: true }

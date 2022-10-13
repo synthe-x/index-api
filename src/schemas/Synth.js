@@ -10,7 +10,8 @@ const SynthSchema = new mongoose.Schema({
     interestRateModel: String,
     accrualTimestamp: String,
     totalBorrowed: String,
-    debtTracker_id : String
+    debtTracker_id : String,
+    decimal :String
 
 },
 { timestamps: true }

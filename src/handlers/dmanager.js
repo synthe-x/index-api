@@ -45,8 +45,10 @@ async function handleNewSynthAsset(decodedData, arguments) {
         const getAssetDetails = await tronWeb.contract(getABI("SynthERC20"), asset_address);
         let name = await getAssetDetails['name']().call();
         let symbol = await getAssetDetails['symbol']().call();
+        let decimal = await getAssetDetails['decimals']().call();
+        console.log(decimal,"decimal Synth");
         let oracle = tronWeb.address.fromHex(decodedData.args[1]);
-        let interestRateModel =`${Number(decodedData.args[2])}`;
+        let interestRateModel =`${decodedData.args[2]}`;
         let priceOracle = await tronWeb.contract().at(oracle);
         let price = (await priceOracle['latestAnswer']().call()).toString() / 10 ** 8;
 
@@ -58,7 +60,8 @@ async function handleNewSynthAsset(decodedData, arguments) {
             oracle: oracle,
             interestRateModel: interestRateModel,
             borrowIndex: `${10 ** 18}`,
-            debtTracker_id : debtTracker
+            debtTracker_id : debtTracker,
+            decimal : decimal
         }
         const createNewSynth = await Synth.create(temp);
 
