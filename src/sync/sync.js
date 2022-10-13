@@ -156,7 +156,7 @@ function syncAndListen({ contractAddress, abi, handlers }) {
 
                             if (decoded_data && decoded_data.args != undefined) {
 
-                                // console.log("decoded data", decoded_data.name, decoded_data) 
+                                // console.log("decoded data", decoded_data.name, decoded_data.args) 
                                 if (handlers[decoded_data["name"]]) {
                                     handlers[decoded_data["name"]](decoded_data, arguments)
                                 }

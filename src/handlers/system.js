@@ -117,6 +117,7 @@ async function handleBorrow(decodedData, arguments) {
         const account = tronWeb.address.fromHex(decodedData.args[0]);
         const asset = tronWeb.address.fromHex(decodedData.args[1]);
         const amount = Number(decodedData.args[2]._hex)
+        console.log("Borrow Amount", amount)
         arguments.account = account;
         arguments.asset = asset;
         arguments.amount = amount;

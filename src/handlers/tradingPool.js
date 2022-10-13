@@ -132,9 +132,12 @@ async function handlePoolExited(decodedData, arguments) {
 
         await PoolExited.create(arguments);
 
+        let userTrad = await UserTrading.findOne({asset_id : asset_id,user_id : user_id, pool_id : pool_id}).lean();
+        let currentAmount = Number(userTrad.amount) - amount;
+
         await UserTrading.findOneAndUpdate(
             {asset_id : asset_id,user_id : user_id, pool_id : pool_id},
-            {$inc : {amount : - amount}},
+            {$set : {amount : currentAmount}},
             {new : true}
         )
     }
