@@ -159,7 +159,7 @@ async function handleBorrow(decodedData, arguments) {
         const isUserSynthExist = await UserDebt.findOne({ user_id: account, synth_id: asset }).lean();
         let userDebt_id;
         if (isUserSynthExist) {
-            const principal = ((isUserSynthExist.principal * Number(borrowIndex)) / isUserSynthExist.interestIndex) + amount;
+            const principal = ((Number(isUserSynthExist.principal) * Number(borrowIndex)) / Number(isUserSynthExist.interestIndex)) + amount;
             const updateBorrowing = await UserDebt.findOneAndUpdate(
                 { user_id: account, synth_id: asset },
                 { $set: { principal: principal, interestIndex: borrowIndex }, $addToSet: { borrows: borrow._id } },
@@ -253,7 +253,7 @@ async function handleRepay(decodedData, arguments) {
     const isUserSynthExist = await UserDebt.findOne({ user_id: account, synth_id: asset }).lean();
     let userDebt_id;
     if (isUserSynthExist) {
-        const principal = ((isUserSynthExist.principal * Number(borrowIndex)) / isUserSynthExist.interestIndex) - amount;
+        const principal = ((Number(isUserSynthExist.principal) * Number(borrowIndex)) / Number(isUserSynthExist.interestIndex)) - amount;
         const updateBorrowing = await UserDebt.findOneAndUpdate(
             { user_id: account, synth_id: asset },
             { $set: { principal: principal, interestIndex: borrowIndex }, $addToSet: { repays: repay._id } },
@@ -332,10 +332,12 @@ async function handleDeposit(decodedData, arguments) {
         // UserCollateral
         const userCollateralExist = await UserCollateral.findOne({ user_id: account, collateral: asset }).lean();
         let collateral_id;
+       
         if (userCollateralExist) {
+            let new_balance = Number(userCollateralExist.balance) + amount;
             const updateUserCollateral = await UserCollateral.findOneAndUpdate(
                 { user_id: account, collateral: asset },
-                { $inc: { balance: amount }, $addToSet: { deposits: deposit._id.toString() } },
+                { $set: { balance: new_balance }, $addToSet: { deposits: deposit._id.toString() } },
                 { new: true }
             );
             collateral_id = updateUserCollateral._id.toString();
@@ -420,9 +422,10 @@ async function handleWithdraw(decodedData, arguments) {
         const userCollateralExist = await UserCollateral.findOne({ user_id: account, collateral: asset }).lean();
         let collateral_id;
         if (userCollateralExist) {
+            let new_balance = Number(userCollateralExist.balance) - amount;
             const updateUserCollateral = await UserCollateral.findOneAndUpdate(
                 { user_id: account, collateral: asset },
-                { $inc: { balance: -amount }, $addToSet: { withdraws: withdraw._id.toString() } },
+                { $set: { balance: new_balance }, $addToSet: { withdraws: withdraw._id.toString() } },
                 { new: true }
             );
             collateral_id = updateUserCollateral._id.toString();

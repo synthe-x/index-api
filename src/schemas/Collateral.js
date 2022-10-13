@@ -8,7 +8,7 @@ const mongoose = require("mongoose");
     index : Number,
     name: String,
     symbol: String,
-    price: Number,
+    price: String,
     oracle: String,
     minCollateral: Number,
 },

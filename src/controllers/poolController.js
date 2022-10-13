@@ -2,14 +2,14 @@ const { TradingPool } = require("../db");
 
 
 
-async function getPoolDetailsById(req, res){
+const getPoolDetailsById = async function(req, res){
 
     try{
 
         let pool_id = req.params.poolIndex;
-
+       
         const getPool = await TradingPool.findOne({pool_id : pool_id}).lean();
-
+       
         return res.status(200).send({status: true, data : getPool});
 
     }
@@ -20,14 +20,11 @@ async function getPoolDetailsById(req, res){
 };
 
 
-async function getAllPoolDetails(req, res){
+const getAllPoolDetails =   async function(req, res){
 
     try{
-
-        const getAllPool = await TradingPool.find().lean();
-
+        const getAllPool = await TradingPool.findOne()
         return res.status(200).send({status: true, data : getAllPool});
-
     }
     catch(error){
         console.log("Error @ getPoolDetailsById", error)

@@ -4,7 +4,7 @@ const UserCollateral = new mongoose.Schema({
    deposits: [String],
    withdraws : [String],
     collateral: String,
-    balance : Number,
+    balance : String,
     user_id : String,
 },
 { timestamps: true }

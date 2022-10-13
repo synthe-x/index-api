@@ -5,7 +5,7 @@ const UserSynth = new mongoose.Schema({
     repays : [String],
     user_id : String,
     synth_id :String,
-    principal: Number,
+    principal: String,
     interestIndex: String
 },
 { timestamps: true }

@@ -4,12 +4,12 @@ const SynthSchema = new mongoose.Schema({
     synth_id : String,
     name: String,
     symbol: String,
-    price: Number,
+    price: String,
     oracle: String,
     borrowIndex: String,
     interestRateModel: String,
-    accrualTimestamp: Number,
-    totalBorrowed: Number,
+    accrualTimestamp: String,
+    totalBorrowed: String,
     debtTracker_id : String
 
 },

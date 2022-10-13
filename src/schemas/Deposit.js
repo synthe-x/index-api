@@ -7,7 +7,7 @@ const DepositSchema = new mongoose.Schema({
     index:Number,
     account: String,
     asset: String,
-    amount: Number,
+    amount: String,
 },
 { timestamps: true }
 );

@@ -1,4 +1,5 @@
-const { User, UserCollateral, Deposit, Withdraw, Collateral, UserDebt, Borrow, Repay, Synth, UserTrading, TradingPool } = require("../db");
+const { User, UserCollateral, Deposit, Withdraw, Collateral, UserDebt, Borrow, Repay, Synth, UserTrading, TradingPool, System } = require("../db");
+const { tronWeb, getABI, getContract } = require("../utils");
 
 
 
@@ -178,11 +179,14 @@ async function getPoolDetOfUserById(req, res) {
 
         }
 
-        const getPoolDetailsOfUser = await UserTrading.findOne({ user_id: user_id, pool_id: pool_id }).lean();
+        const getPoolDetailsOfUser = await UserTrading.findOne({ user_id: user_id, pool_id: pool_id }).select({ createdAt : 0, updatedAt : 0, __v : 0, _id : 0, pool_id : 0 }).lean();
 
-        const getPoolDetials = await TradingPool.findOne({ pool_id: pool_id }).select({ createdAt: -1, updatedAt: -1, __v: -1, _id: -1 });
+        const getPoolDetials = await TradingPool.findOne({pool_id : pool_id}).select({ createdAt: 0, updatedAt: 0, __v: 0, _id: 0 }).lean();
         getPoolDetailsOfUser.pool = getPoolDetials;
-        console.log("res")
+
+        let synth_id = getPoolDetailsOfUser.asset_id;
+        const getAssetDetails = await Synth.findOne({synth_id : synth_id}).select({ createdAt: 0, updatedAt: 0, __v: 0, _id: 0, synth_id : 0 }).lean();
+        getPoolDetailsOfUser.asset = getAssetDetails
         return res.status(200).send({ status: true, data: getPoolDetailsOfUser });
 
     }
@@ -252,6 +256,64 @@ async function getUserCollateral(req, res) {
         console.log("Error @ getUserCollateral", error)
         return res.status(500).send({ msg: error.message, status: false });
     }
+};
+
+
+async function userTotalCollateral(req, res){
+
+    try{
+
+        const user_id = req.params.user_id;
+       
+        const userCollaterals = await UserCollateral.find({user_id : user_id}).select({balance:1, collateral: 1, _id:0}).lean();
+
+        let totalCollateralBalance = 0;
+        for(let i in userCollaterals){
+            
+            let cManager = await getContract("CollateralManager");
+            let CAsset  = await cManager.methods.assetToCAsset(userCollaterals[i].collateral).call()
+            let Oracle = await tronWeb.contract(getABI("CollateralERC20"), CAsset);
+            let col_price = (await Oracle['get_price']().call()).toString() / 10 ** 8;
+            let balance = (Number(userCollaterals[i].balance) / 10**18 ) * col_price;
+            totalCollateralBalance += balance
+        };
+
+    
+        const userDebts = await UserDebt.find({user_id : user_id}).select({principal:1, synth_id: 1,interestIndex:1, _id:0}).lean();
+
+        let totalPrincipal = 0 ;
+        for(let i in userDebts){
+            const synth = await Synth.findOne({synth_id : userDebts[i].synth_id }).select({borrowIndex:1,oracle : 1, _id : 0}).lean();
+            let priceOracle = await tronWeb.contract().at(synth.oracle);
+            let price = (await priceOracle['latestAnswer']().call()).toString() / 10 ** 8;
+
+            let currentPrincipal = (Number(userDebts[i].principal) / 10**18) * (synth.borrowIndex /userDebts[i].interestIndex ) * price;
+            totalPrincipal += currentPrincipal
+        }
+
+        const system = await System.findOne().lean();
+
+        if(!system){
+
+        }
+
+        let CRatio = (totalCollateralBalance / totalPrincipal ) *100;
+        let data = {};
+        data.collateralBalance = totalCollateralBalance;
+        data.principalBalance = totalPrincipal;
+        data.cRatio = CRatio;
+        data.minCRatio = system.minCollateralRatio
+
+        return res.status(200).send({ status: true, data: data })
+
+
+    }
+    catch (error) {
+        console.log("Error @ userTotalCollateral", error)
+        return res.status(500).send({ msg: error.message, status: false });
+    }
 }
 
-module.exports = { userDetails, getPoolDetOfUserById, getUserCollateral }
+// userTotalCollateral();
+
+module.exports = { userDetails, getPoolDetOfUserById, getUserCollateral, userTotalCollateral }
