@@ -141,8 +141,8 @@ async function getPoolDetOfUserById(req, res) {
                 }
 
                 let _synth = {
-                    user_id: userSynth_detail.user_id,
-                    synth_id: userSynth_detail.synth_id,
+                    // user_id: userSynth_detail.user_id,
+                    // synth_id: userSynth_detail.synth_id,
                     principal: userSynth_detail.principal,
                     interestIndex: userSynth_detail.interestIndex
                 };
@@ -161,12 +161,12 @@ async function getPoolDetOfUserById(req, res) {
                 let _repay = [];
 
                 for (let j in borrow) {
-                    const borrow_detail = await Borrow.findOne({ _id: borrow[j] }).select({ txn_id: 1, block_timestamp: 1, amount: 1 }).lean();
+                    const borrow_detail = await Borrow.findOne({ _id: borrow[j] }).select({ asset: 1, _id: 0, amount: 1 }).lean();
                     _borrow.push(borrow_detail);
                 };
 
                 for (let j in repay) {
-                    const repay_detail = await Repay.findOne({ _id: repay[j] }).select({ txn_id: 1, block_timestamp: 1, amount: 1 }).lean();
+                    const repay_detail = await Repay.findOne({ _id: repay[j] }).select({ asset: 1, _id: 1, amount: 1 }).lean();
                     _repay.push(repay_detail);
                 }
                 _synth.borrow = _borrow;
@@ -179,13 +179,13 @@ async function getPoolDetOfUserById(req, res) {
 
         }
 
-        const getPoolDetailsOfUser = await UserTrading.findOne({ user_id: user_id, pool_id: pool_id }).select({ createdAt : 0, updatedAt : 0, __v : 0, _id : 0, pool_id : 0 }).lean();
+        const getPoolDetailsOfUser = await UserTrading.findOne({ user_id: user_id, pool_id: pool_id }).select({ createdAt : 0, updatedAt : 0, __v : 0, _id : 0, pool_id : 0, txn_id : 0, block_number : 0, block_timestamp : 0 }).lean();
 
-        const getPoolDetials = await TradingPool.findOne({pool_id : pool_id}).select({ createdAt: 0, updatedAt: 0, __v: 0, _id: 0 }).lean();
+        const getPoolDetials = await TradingPool.findOne({pool_id : pool_id}).select({ createdAt: 0, updatedAt: 0, __v: 0, _id: 0 , txn_id : 0, block_number : 0, block_timestamp : 0}).lean();
         getPoolDetailsOfUser.pool = getPoolDetials;
 
         let synth_id = getPoolDetailsOfUser.asset_id;
-        const getAssetDetails = await Synth.findOne({synth_id : synth_id}).select({ createdAt: 0, updatedAt: 0, __v: 0, _id: 0, synth_id : 0 }).lean();
+        const getAssetDetails = await Synth.findOne({synth_id : synth_id}).select({ createdAt: 0, updatedAt: 0, __v: 0, _id: 0, synth_id : 0, txn_id : 0, block_number : 0, block_timestamp : 0 }).lean();
         getPoolDetailsOfUser.asset = getAssetDetails
         return res.status(200).send({ status: true, data: getPoolDetailsOfUser });
 
@@ -235,12 +235,12 @@ async function getUserCollateral(req, res) {
             let _deposit = [];
             let _withdraw = [];
             for (let j in deposit) {
-                const deposit_detail = await Deposit.findOne({ _id: deposit[j] }).select({ txn_id: 1, block_timestamp: 1, amount: 1 }).lean();
+                const deposit_detail = await Deposit.findOne({ _id: deposit[j] }).select({ asset: 1, _id: 0, amount: 1 }).lean();
                 _deposit.push(deposit_detail);
             };
 
             for (let j in withdraw) {
-                const withdraw_detail = await Withdraw.findOne({ _id: withdraw[j] }).select({ txn_id: 1, block_timestamp: 1, amount: 1 }).lean();
+                const withdraw_detail = await Withdraw.findOne({ _id: withdraw[j] }).select({ asset: 1, _id: 0, amount: 1 }).lean();
                 _withdraw.push(withdraw_detail);
             }
             _collateral.deposit = _deposit;
@@ -259,7 +259,7 @@ async function getUserCollateral(req, res) {
 };
 
 
-async function userTotalCollateral(req, res){
+async function getUserAll(req, res){
 
     try{
 
@@ -282,27 +282,42 @@ async function userTotalCollateral(req, res){
         const userDebts = await UserDebt.find({user_id : user_id}).select({principal:1, synth_id: 1,interestIndex:1, _id:0}).lean();
 
         let totalPrincipal = 0 ;
+        let yearly_interest_amount  = 0;
         for(let i in userDebts){
-            const synth = await Synth.findOne({synth_id : userDebts[i].synth_id }).select({borrowIndex:1,oracle : 1, _id : 0}).lean();
+            const synth = await Synth.findOne({synth_id : userDebts[i].synth_id }).select({borrowIndex:1,oracle : 1, debtTracker_id : 1, _id : 0}).lean();
+
             let priceOracle = await tronWeb.contract().at(synth.oracle);
             let price = (await priceOracle['latestAnswer']().call()).toString() / 10 ** 8;
-
+            // geting interest
+            const getAssetDetails = await tronWeb.contract(getABI("DebtTracker"), synth.debtTracker_id);
+            let interestRate = await getAssetDetails['get_interest_rate']().call();
+            const yearlyInterestRate = (( Number(interestRate[0]._hex) / 10**Number(interestRate[1]._hex) ) + 1)**(365*24*3600) - 1;
+                  
             let currentPrincipal = (Number(userDebts[i].principal) / 10**18) * (synth.borrowIndex /userDebts[i].interestIndex ) * price;
+
+            yearly_interest_amount += yearlyInterestRate * currentPrincipal;
             totalPrincipal += currentPrincipal
         }
 
+        let avgInterest = (yearly_interest_amount / totalPrincipal) * 100 ;
+        
         const system = await System.findOne().lean();
-
+        let minCollateralRatio;
         if(!system){
-
+            minCollateralRatio = 130;
+        }else{
+            minCollateralRatio = system.minCollateralRatio;
         }
 
         let CRatio = (totalCollateralBalance / totalPrincipal ) *100;
         let data = {};
-        data.collateralBalance = totalCollateralBalance;
-        data.principalBalance = totalPrincipal;
-        data.cRatio = CRatio;
-        data.minCRatio = system.minCollateralRatio
+        data.collateralBalance = totalCollateralBalance.toFixed(5);
+        data.principalBalance = totalPrincipal.toFixed(5);
+        data.cRatio = CRatio.toFixed(5);
+        data.minCRatio = `${minCollateralRatio}`;
+        data.avgInterest = `${avgInterest.toFixed(5)}`;
+
+       
 
         return res.status(200).send({ status: true, data: data })
 
@@ -316,4 +331,4 @@ async function userTotalCollateral(req, res){
 
 // userTotalCollateral();
 
-module.exports = { userDetails, getPoolDetOfUserById, getUserCollateral, userTotalCollateral }
+module.exports = { userDetails, getPoolDetOfUserById, getUserCollateral, getUserAll }

@@ -5,7 +5,7 @@ const { userDetails, userTotalCollateral } = require("./controllers/userControll
 const { getAllCollateral, getAllSynth } = require("./controllers/systemController");
 
 connect();
-// syncAndListen(SystemConfig);
+syncAndListen(SystemConfig);
 // userTotalCollateral()
 
 // userDetails("TTvnhvkLDqhdXtAGPfCQfPR7ffE8uPVSe6");

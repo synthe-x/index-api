@@ -143,7 +143,7 @@ async function handlePoolExited(decodedData, arguments) {
     }
 }
 
-async function handleExchangeTrading(decodedData) {
+async function handleExchangeTrading(decodedData,arguments) {
     try{
 
         const pool_id = Number(decodedData.args[0]);
