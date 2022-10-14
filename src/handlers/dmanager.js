@@ -42,6 +42,12 @@ async function handleNewSynthAsset(decodedData, arguments) {
             console.log("Synth already exist");
             return
         }
+
+        const getSynthDetails = await tronWeb.contract(getABI("DebtTracker"),debtTracker);
+        let interestRate = await getSynthDetails['get_interest_rate']().call();
+    
+        const apy = ((Number(interestRate._hex) / 10 ** 18) + 1) ** (365 * 24 * 3600) - 1 ;
+
         const getAssetDetails = await tronWeb.contract(getABI("SynthERC20"), asset_address);
         let name = await getAssetDetails['name']().call();
         let symbol = await getAssetDetails['symbol']().call();
@@ -61,7 +67,8 @@ async function handleNewSynthAsset(decodedData, arguments) {
             interestRateModel: interestRateModel,
             borrowIndex: `${10 ** 18}`,
             debtTracker_id : debtTracker,
-            decimal : decimal
+            decimal : decimal,
+            apy : apy
         }
         const createNewSynth = await Synth.create(temp);
 

@@ -8,6 +8,7 @@ const BorrowSchema = new mongoose.Schema({
     account : String,
     asset : String,
     amount : String,
+    apy : String
 },
 { timestamps: true }
 );

@@ -6,7 +6,8 @@ const UserSynth = new mongoose.Schema({
     user_id : String,
     synth_id :String,
     principal: String,
-    interestIndex: String
+    interestIndex: String,
+    apy : String
 },
 { timestamps: true }
 );

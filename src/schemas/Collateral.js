@@ -12,6 +12,7 @@ const mongoose = require("mongoose");
     oracle: String,
     decimal : String,
     minCollateral: Number,
+    cAsset : String
 },
 { timestamps: true }
 );

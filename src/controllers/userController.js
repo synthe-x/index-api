@@ -318,10 +318,15 @@ async function getUserAll(req, res) {
         }
 
         let CRatio = (totalCollateralBalance / totalPrincipal) * 100;
+
+        if (totalPrincipal == 0) {
+            avgInterest = 0;
+            CRatio = Number.MAX_SAFE_INTEGER
+        }
         let data = {};
-        data.collateralBalance = totalCollateralBalance;
-        data.principalBalance = totalPrincipal;
-        data.cRatio = CRatio;
+        data.collateralBalance = `${totalCollateralBalance}`;
+        data.principalBalance = `${totalPrincipal}`;
+        data.cRatio = `${CRatio}`;
         data.minCRatio = `${minCollateralRatio}`;
         data.avgInterest = `${avgInterest}`;
 
@@ -344,37 +349,78 @@ async function userWalletBalances(req, res) {
     try {
 
         const user_id = req.params.user_id;
-        const collateral = await Collateral.find().select({ coll_address: 1, name: 1, symbol: 1, price: 1, decimal: 1, _id: 0 }).lean();
+        let collateral = await Collateral.find().lean();
+        let synth = await Synth.find().lean();
+
+        
         let collaterals = []
         for (let i in collateral) {
-            let cManager = await getContract("CollateralManager");
-            let CAsset = await cManager.methods.assetToCAsset(collateral[i].coll_address).call()
-            let Oracle = await tronWeb.contract(getABI("CollateralERC20"), CAsset);
-            let user_balance = Number((await Oracle['balanceOf'](user_id).call()));
+           
+            let Oracle = await tronWeb.contract(getABI("CollateralERC20"), collateral[i].cAsset);
+            let user_balance = (Oracle['balanceOf'](user_id).call());
+            let userColl = UserCollateral.findOne({ collateral: collateral[i].coll_address, user_id: user_id });
+
+            let promise = await Promise.all([
+                user_balance, userColl
+            ]);
+            user_balance = Number(promise[0]);
+            userColl = promise[1];
+
+            let amount;
+            if (userColl) {
+                amount = userColl.balance;
+            } else {
+                amount = 0;
+
+            }
             let _colateral = {
                 name: collateral[i].name,
                 symbol: collateral[i].symbol,
                 price: collateral[i].price,
                 decimal: collateral[i].decimal,
-                userBalance: user_balance
+                walletBalance: user_balance,
+                amount: amount,
+                collateralId: collateral[i].coll_address,
+                minCollateral: collateral[i].minCollateral
             }
             collaterals.push(_colateral)
 
         }
 
-        const synth = await Synth.find().select({ synth_id: 1, name: 1, symbol: 1, price: 1, borrowIndex: 1, decimal: 1 }).lean();
+
         let synths = [];
         for (let i in synth) {
 
             const getAssetDetails = await tronWeb.contract(getABI("SynthERC20"), synth[i].synth_id);
-            let balance = Number(await getAssetDetails['balanceOf'](user_id).call());
+            let balance = await getAssetDetails['balanceOf'](user_id).call();
+
+            let userDebt = UserDebt.findOne({ user_id: user_id, synth_id: synth[i].synth_id }).lean();
+
+            let promise = await Promise.all([
+                balance, userDebt
+            ])
+
+            balance = Number(promise[0]);
+            userDebt = promise[1];
+            console.log(promise, "promise")
+            let amount;
+            if (!userDebt) {
+                amount = 0;
+            } else {
+                amount = userDebt.principal;
+            }
+
             let _synth = {
                 name: synth[i].name,
                 symbol: synth[i].symbol,
                 price: synth[i].price,
                 decimal: synth[i].decimal,
-                userBalance: balance
+                WalletBalance: balance,
+                synthId: synth[i].synth_id,
+                apy: synth[i].apy
             }
+            _synth.amount = amount;
+
             synths.push(_synth)
 
         }

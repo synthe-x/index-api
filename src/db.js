@@ -37,7 +37,7 @@ const Sync = mongoose.model("Sync",SyncSchema)
 
 
 async function connect() {
-    mongoose.connect("mongodb+srv://g-2-project-1:MvD9HwLH72zL105K@cluster0.j1yrl.mongodb.net/chainscore-index?retryWrites=true&w=majority", {
+    mongoose.connect("mongodb+srv://g-2-project-1:MvD9HwLH72zL105K@cluster0.j1yrl.mongodb.net/chainscore-index-3?retryWrites=true&w=majority", {
     useNewUrlParser: true
 }) .then(() => console.log("MongoDb is connected"))
 .catch(err => console.log(err))

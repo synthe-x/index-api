@@ -66,7 +66,7 @@ async function handleExchange(decodedData, arguments) {
                 txn_id: arguments.txn_id,
                 block_number: arguments.block_number,
                 block_timestamp: arguments.block_timestamp,
-            
+
             }
         );
 
@@ -133,7 +133,7 @@ async function handleBorrow(decodedData, arguments) {
                 txn_id: arguments.txn_id,
                 block_number: arguments.block_number,
                 block_timestamp: arguments.block_timestamp,
-            
+
             }
         );
 
@@ -157,7 +157,12 @@ async function handleBorrow(decodedData, arguments) {
         if (!synth) {
             console.log("synth not found", synth);
             return
-        }
+        };
+
+        const getAssetDetails = await tronWeb.contract(getABI("DebtTracker"), synth.debtTracker_id);
+        let interestRate = await getAssetDetails['get_interest_rate']().call();
+
+        const apy = ((Number(interestRate._hex) / 10 ** 18) + 1) ** (365 * 24 * 3600) - 1;
 
         let borrowIndex = synth.borrowIndex;
 
@@ -169,7 +174,7 @@ async function handleBorrow(decodedData, arguments) {
             const principal = ((Number(isUserSynthExist.principal) * Number(borrowIndex)) / Number(isUserSynthExist.interestIndex)) + amount;
             const updateBorrowing = await UserDebt.findOneAndUpdate(
                 { user_id: account, synth_id: asset },
-                { $set: { principal: principal, interestIndex: borrowIndex }, $addToSet: { borrows: borrow._id } },
+                { $set: { principal: principal, interestIndex: borrowIndex, apy: apy }, $addToSet: { borrows: borrow._id } },
                 { new: true }
             );
 
@@ -182,7 +187,8 @@ async function handleBorrow(decodedData, arguments) {
                 synth_id: asset,
                 principal: amount,
                 interestIndex: borrowIndex,
-                borrows: borrow._id
+                borrows: borrow._id._bsontype,
+                apy: apy
             }
 
             const creatUserSynth = await UserDebt.create(temp);
@@ -259,7 +265,12 @@ async function handleRepay(decodedData, arguments) {
 
     if (!synth) {
         return ("synth not found", synth)
-    }
+    };
+
+    const getAssetDetails = await tronWeb.contract(getABI("DebtTracker"), synth.debtTracker_id);
+    let interestRate = await getAssetDetails['get_interest_rate']().call();
+
+    const apy = ((Number(interestRate._hex) / 10 ** 18) + 1) ** (365 * 24 * 3600) - 1;
 
     let borrowIndex = synth.borrowIndex;
 
@@ -270,7 +281,7 @@ async function handleRepay(decodedData, arguments) {
         const principal = ((Number(isUserSynthExist.principal) * Number(borrowIndex)) / Number(isUserSynthExist.interestIndex)) - amount;
         const updateBorrowing = await UserDebt.findOneAndUpdate(
             { user_id: account, synth_id: asset },
-            { $set: { principal: principal, interestIndex: borrowIndex }, $addToSet: { repays: repay._id } },
+            { $set: { principal: principal, interestIndex: borrowIndex, apy : apy }, $addToSet: { repays: repay._id } },
             { new: true }
         )
         userDebt_id = updateBorrowing._id;
@@ -282,7 +293,8 @@ async function handleRepay(decodedData, arguments) {
             synth_id: asset,
             principal: -amount,
             interestIndex: borrowIndex,
-            repays: repay._id
+            repays: repay._id,
+            apy : apy
         }
 
         const creatUserSynth = await UserDebt.create(temp);
@@ -333,7 +345,7 @@ async function handleDeposit(decodedData, arguments) {
                 txn_id: arguments.txn_id,
                 block_number: arguments.block_number,
                 block_timestamp: arguments.block_timestamp,
-            
+
             }
         );
 
@@ -367,14 +379,14 @@ async function handleDeposit(decodedData, arguments) {
             // console.log("updateUserCollateral",updateUserCollateral)
         }
         else {
-            const collateral = await Collateral.findOne({coll_address : asset}).lean();
+            const collateral = await Collateral.findOne({ coll_address: asset }).lean();
             const decimal = collateral.decimal;
             let obj = {
                 deposits: deposit._id.toString(),
                 collateral: asset,
                 balance: amount,
                 user_id: account,
-                decimal : decimal
+                decimal: decimal
             };
             const createUserCollateral = await UserCollateral.create(obj);
             collateral_id = createUserCollateral._id.toString()
@@ -394,7 +406,7 @@ async function handleDeposit(decodedData, arguments) {
         }
         else {
 
-            
+
             let temp = {
                 user_id: account,
                 collaterals: collateral_id
@@ -431,10 +443,10 @@ async function handleWithdraw(decodedData, arguments) {
                 txn_id: arguments.txn_id,
                 block_number: arguments.block_number,
                 block_timestamp: arguments.block_timestamp,
-    
+
             }
         );
-       
+
         if (isDuplicateTxn) {
 
             if (isDuplicateTxn.account == account &&
@@ -451,7 +463,7 @@ async function handleWithdraw(decodedData, arguments) {
         const withdraw = await Withdraw.create(arguments);
 
         // get decimals
-       
+
 
         // UserCollateral
         const userCollateralExist = await UserCollateral.findOne({ user_id: account, collateral: asset }).lean();
@@ -467,7 +479,7 @@ async function handleWithdraw(decodedData, arguments) {
 
         }
         else {
-            const collateral = await Collateral.findOne({coll_address : asset}).lean();
+            const collateral = await Collateral.findOne({ coll_address: asset }).lean();
             const decimal = collateral.decimal;
             let obj = {
                 withdraws: withdraw._id.toString(),
