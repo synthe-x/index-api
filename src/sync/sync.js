@@ -170,7 +170,7 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
 
                             if (decoded_data && decoded_data.args != undefined) {
 
-                                // console.log("decoded data", decoded_data) 
+                                console.log("decoded data", decoded_data) 
                                 if (handlers[decoded_data["name"]]) {
                                     handlers[decoded_data["name"]](decoded_data, arguments)
                                 }
@@ -185,7 +185,7 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
             }
             else if(isLastPage == true) {
                 await Sync.findOneAndUpdate({},{lastBlockTimestamp : lastTxnTimestamp})
-                console.log("Done")
+    
                 return listen({ contractAddress, abi, handlers });
                 
             }

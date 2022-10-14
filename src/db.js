@@ -30,19 +30,27 @@ const Deposit = mongoose.model('Deposit', DepositSchema);
 const Borrow = mongoose.model('Borrow', BorrowSchema);
 const Repay = mongoose.model('Repay', RepaySchema);
 const Withdraw = mongoose.model('Withdraw', WithdrawSchema);
-const Exchange = mongoose.model("Exchange",ExchangeSchema);
-const PoolEntered = mongoose.model("PoolEntered",poolEnteredSchema);
-const PoolExited = mongoose.model("PoolExited",poolExitedSchema);
-const Sync = mongoose.model("Sync",SyncSchema)
+const Exchange = mongoose.model("Exchange", ExchangeSchema);
+const PoolEntered = mongoose.model("PoolEntered", poolEnteredSchema);
+const PoolExited = mongoose.model("PoolExited", poolExitedSchema);
+const Sync = mongoose.model("Sync", SyncSchema)
 
+
+// async function connect() {
+//     mongoose.connect("mongodb+srv://g-2-project-1:MvD9HwLH72zL105K@cluster0.j1yrl.mongodb.net/chainscore-index-3?retryWrites=true&w=majority", {
+//     useNewUrlParser: true
+// }) .then(() => console.log("MongoDb is connected"))
+// .catch(err => console.log(err))
+
+// }
 
 async function connect() {
-    mongoose.connect("mongodb+srv://g-2-project-1:MvD9HwLH72zL105K@cluster0.j1yrl.mongodb.net/chainscore-index-3?retryWrites=true&w=majority", {
-    useNewUrlParser: true
-}) .then(() => console.log("MongoDb is connected"))
-.catch(err => console.log(err))
+    mongoose.connect("mongodb://root:password@localhost:27017/?authMechanism=DEFAULT", {
+        useNewUrlParser: true
+    }).then(() => console.log("MongoDb is connected"))
+        .catch(err => console.log(err))
 
 }
 
 
-module.exports = { System, User, UserDebt, UserCollateral, Collateral, Synth, UserTrading, TradingPool,connect, Deposit, Borrow, Repay, Withdraw , Exchange, PoolEntered, PoolExited, Sync}
+module.exports = { System, User, UserDebt, UserCollateral, Collateral, Synth, UserTrading, TradingPool, connect, Deposit, Borrow, Repay, Withdraw, Exchange, PoolEntered, PoolExited, Sync }

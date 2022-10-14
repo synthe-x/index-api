@@ -9,6 +9,7 @@ const { getAllCollateral, getAllSynth } = require("./controllers/systemControlle
 async function run(){
    await  connect();
     syncAndListen(SystemConfig);
+//    return res.send({message : "success"})
 }
 run();
 // userTotalCollateral()
@@ -17,3 +18,5 @@ run();
 // getAllCollateral();
 // getAllSynth();
 // TTvnhvkLDqhdXtAGPfCQfPR7ffE8uPVSe6
+
+module.exports = {run};

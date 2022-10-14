@@ -130,6 +130,9 @@ async function getPoolDetOfUserById(req, res) {
         if (pool_id == "0") {
 
             const userDetails = await User.findOne({ user_id: user_id }).lean();
+            if(!userDetails){
+                return res.status(404).send({ status: false, error: "User not found" })
+            }
 
             let synth = userDetails.synths;
             let synths_details = [];
@@ -182,7 +185,15 @@ async function getPoolDetOfUserById(req, res) {
 
         const getPoolDetailsOfUser = await UserTrading.findOne({ user_id: user_id, pool_id: pool_id }).select({ createdAt: 0, updatedAt: 0, __v: 0, _id: 0, pool_id: 0, txn_id: 0, block_number: 0, block_timestamp: 0 }).lean();
 
+        if(!getPoolDetailsOfUser){
+            return res.status(404).send({ status : false, error: "User trading not found in this pool" });
+        }
+
         const getPoolDetials = await TradingPool.findOne({ pool_id: pool_id }).select({ createdAt: 0, updatedAt: 0, __v: 0, _id: 0, txn_id: 0, block_number: 0, block_timestamp: 0 }).lean();
+
+        if(!getPoolDetials){
+            return res.status(404).send({ msg: error.message, error: "Pool not found" });
+        }
         getPoolDetailsOfUser.pool = getPoolDetials;
 
         let synth_id = getPoolDetailsOfUser.asset_id;
@@ -205,7 +216,7 @@ async function getUserCollateral(req, res) {
         const userDetails = await User.findOne({ user_id: user_id }).lean();
 
         if (!userDetails) {
-            return
+            return res.status(404).send({ status: false, error : "User Not Found " });
         }
 
         // User Collateral
@@ -268,6 +279,8 @@ async function getUserAll(req, res) {
         const user_id = req.params.user_id;
 
         const userCollaterals = await UserCollateral.find({ user_id: user_id }).select({ balance: 1, collateral: 1, _id: 0, decimal: 1 }).lean();
+
+
 
         let totalCollateralBalance = 0;
         for (let i in userCollaterals) {
