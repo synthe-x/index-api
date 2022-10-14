@@ -141,8 +141,8 @@ async function getPoolDetOfUserById(req, res) {
                 }
 
                 let _synth = {
-                    // user_id: userSynth_detail.user_id,
-                    // synth_id: userSynth_detail.synth_id,
+                    user_id: userSynth_detail.user_id,
+                    synth_id: userSynth_detail.synth_id,
                     principal: userSynth_detail.principal,
                     interestIndex: userSynth_detail.interestIndex
                 };
@@ -356,7 +356,7 @@ async function userWalletBalances(req, res) {
         let collaterals = []
         for (let i in collateral) {
            
-            let Oracle = await tronWeb.contract(getABI("CollateralERC20"), collateral[i].cAsset);
+            let Oracle = await tronWeb.contract(getABI("CollateralERC20"), collateral[i].coll_address);
             let user_balance = (Oracle['balanceOf'](user_id).call());
             let userColl = UserCollateral.findOne({ collateral: collateral[i].coll_address, user_id: user_id });
 
@@ -402,7 +402,6 @@ async function userWalletBalances(req, res) {
 
             balance = Number(promise[0]);
             userDebt = promise[1];
-            console.log(promise, "promise")
             let amount;
             if (!userDebt) {
                 amount = 0;
@@ -415,7 +414,7 @@ async function userWalletBalances(req, res) {
                 symbol: synth[i].symbol,
                 price: synth[i].price,
                 decimal: synth[i].decimal,
-                WalletBalance: balance,
+                walletBalance: balance,
                 synthId: synth[i].synth_id,
                 apy: synth[i].apy
             }

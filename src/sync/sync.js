@@ -49,7 +49,7 @@ async function listen({ contractAddress, abi, handlers }) {
                     }
                     if (event) {
                         console.log("events",event)
-                        syncAndListen({ contractAddress, abi, handlers });
+                       return syncAndListen({ contractAddress, abi, handlers });
                         /*
                         let res = event.result;
                         let arr = Object.keys(res);
@@ -186,8 +186,8 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
             else if(isLastPage == true) {
                 await Sync.findOneAndUpdate({},{lastBlockTimestamp : lastTxnTimestamp})
                 console.log("Done")
-                listen({ contractAddress, abi, handlers });
-                return
+                return listen({ contractAddress, abi, handlers });
+                
             }
         }
         catch (error) {

@@ -187,7 +187,7 @@ async function handleBorrow(decodedData, arguments) {
                 synth_id: asset,
                 principal: amount,
                 interestIndex: borrowIndex,
-                borrows: borrow._id._bsontype,
+                borrows: borrow._id,
                 apy: apy
             }
 
