@@ -15,6 +15,7 @@ const WithdrawSchema = require("./schemas/Withdraw");
 const ExchangeSchema = require('./schemas/Exchange.js');
 const poolEnteredSchema = require('./schemas/PoolEntered.js');
 const poolExitedSchema = require('./schemas/PoolExited.js');
+const SyncSchema = require('./schemas/Sync.js');
 
 
 const System = mongoose.model('System', SystemSchema);
@@ -32,7 +33,7 @@ const Withdraw = mongoose.model('Withdraw', WithdrawSchema);
 const Exchange = mongoose.model("Exchange",ExchangeSchema);
 const PoolEntered = mongoose.model("PoolEntered",poolEnteredSchema);
 const PoolExited = mongoose.model("PoolExited",poolExitedSchema);
-
+const Sync = mongoose.model("Sync",SyncSchema)
 
 
 async function connect() {
@@ -44,4 +45,4 @@ async function connect() {
 }
 
 
-module.exports = { System, User, UserDebt, UserCollateral, Collateral, Synth, UserTrading, TradingPool,connect, Deposit, Borrow, Repay, Withdraw , Exchange, PoolEntered, PoolExited}
+module.exports = { System, User, UserDebt, UserCollateral, Collateral, Synth, UserTrading, TradingPool,connect, Deposit, Borrow, Repay, Withdraw , Exchange, PoolEntered, PoolExited, Sync}

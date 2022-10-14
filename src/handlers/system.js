@@ -52,12 +52,12 @@ async function handleNewSafeCRatio(decodedData, arguments) {
 }
 
 async function handleExchange(decodedData, arguments) {
-    
-    try{
+
+    try {
 
         const pool_id = Number(decodedData.args[0]);
         const user_id = tronWeb.address.fromHex(decodedData.args[1]);
-        const src =  tronWeb.address.fromHex(decodedData.args[2]);
+        const src = tronWeb.address.fromHex(decodedData.args[2]);
         const src_amount = `${Number(decodedData.args[3])}`;
         const dst = tronWeb.address.fromHex(decodedData.args[4]);
 
@@ -66,7 +66,7 @@ async function handleExchange(decodedData, arguments) {
                 txn_id: arguments.txn_id,
                 block_number: arguments.block_number,
                 block_timestamp: arguments.block_timestamp,
-                index: arguments.index
+            
             }
         );
 
@@ -82,7 +82,7 @@ async function handleExchange(decodedData, arguments) {
 
         }
 
-        if(pool_id != '0'){
+        if (pool_id != '0') {
             handleExchangeTrading(decodedData, arguments)
             return;
         }
@@ -92,8 +92,8 @@ async function handleExchange(decodedData, arguments) {
         let srcOracle = await tronWeb.contract(getABI("SynthERC20"), src);
         let dst_price = (await dstOracle['get_price']().call()).toString() / 10 ** 8;
         let src_price = (await srcOracle['get_price']().call()).toString() / 10 ** 8;
-       
-        let dst_amount = (src_price * src_amount) / dst_price ;
+
+        let dst_amount = (src_price * src_amount) / dst_price;
         arguments.pool_id = pool_id;
         arguments.user_id = user_id;
         arguments.src = src;
@@ -103,7 +103,7 @@ async function handleExchange(decodedData, arguments) {
         await Exchange.create(arguments);
 
     }
-    catch(error){
+    catch (error) {
         console.log("Error @ handleExchange", error)
     }
 
@@ -116,7 +116,13 @@ async function handleBorrow(decodedData, arguments) {
     try {
         const account = tronWeb.address.fromHex(decodedData.args[0]);
         const asset = tronWeb.address.fromHex(decodedData.args[1]);
-        const amount = Number(decodedData.args[2]._hex)
+        let amount;
+        if (arguments.from == 0) {
+            amount = Number(decodedData.args[2]._hex)
+        }
+        else if (arguments.from == 1) {
+            amount = Number(decodedData.args[2]);
+        }
         console.log("Borrow Amount", amount)
         arguments.account = account;
         arguments.asset = asset;
@@ -127,7 +133,7 @@ async function handleBorrow(decodedData, arguments) {
                 txn_id: arguments.txn_id,
                 block_number: arguments.block_number,
                 block_timestamp: arguments.block_timestamp,
-                index: arguments.index
+            
             }
         );
 
@@ -214,17 +220,24 @@ async function handleRepay(decodedData, arguments) {
 
     const account = tronWeb.address.fromHex(decodedData.args[0]);
     const asset = tronWeb.address.fromHex(decodedData.args[1]);
-    const amount = Number(decodedData.args[2]._hex)
+
+    let amount;
+    if (arguments.from == 0) {
+        amount = Number(decodedData.args[2]._hex)
+    }
+    else if (arguments.from == 1) {
+        amount = Number(decodedData.args[2]);
+    }
+
     arguments.account = account;
     arguments.asset = asset;
     arguments.amount = amount;
-
+    console.log("Repay Amount", amount)
     const isDuplicateTxn = await Repay.findOne(
         {
             txn_id: arguments.txn_id,
             block_number: arguments.block_number,
-            block_timestamp: arguments.block_timestamp,
-            index: arguments.index
+            block_timestamp: arguments.block_timestamp
         }
     );
 
@@ -302,7 +315,15 @@ async function handleDeposit(decodedData, arguments) {
     try {
         const account = tronWeb.address.fromHex(decodedData.args[0]);
         const asset = tronWeb.address.fromHex(decodedData.args[1]);
-        const amount = Number(decodedData.args[2]._hex)
+
+        let amount;
+        if (arguments.from == 0) {
+            amount = Number(decodedData.args[2]._hex)
+        }
+        else if (arguments.from == 1) {
+            amount = Number(decodedData.args[2]);
+        }
+        console.log("deposit amount", amount)
         arguments.account = account;
         arguments.asset = asset;
         arguments.amount = amount;
@@ -312,7 +333,7 @@ async function handleDeposit(decodedData, arguments) {
                 txn_id: arguments.txn_id,
                 block_number: arguments.block_number,
                 block_timestamp: arguments.block_timestamp,
-                index: arguments.index
+            
             }
         );
 
@@ -333,7 +354,7 @@ async function handleDeposit(decodedData, arguments) {
         // UserCollateral
         const userCollateralExist = await UserCollateral.findOne({ user_id: account, collateral: asset }).lean();
         let collateral_id;
-       
+
         if (userCollateralExist) {
             let new_balance = Number(userCollateralExist.balance) + amount;
             const updateUserCollateral = await UserCollateral.findOneAndUpdate(
@@ -346,12 +367,14 @@ async function handleDeposit(decodedData, arguments) {
             // console.log("updateUserCollateral",updateUserCollateral)
         }
         else {
-
+            const collateral = await Collateral.findOne({coll_address : asset}).lean();
+            const decimal = collateral.decimal;
             let obj = {
                 deposits: deposit._id.toString(),
                 collateral: asset,
                 balance: amount,
-                user_id: account
+                user_id: account,
+                decimal : decimal
             };
             const createUserCollateral = await UserCollateral.create(obj);
             collateral_id = createUserCollateral._id.toString()
@@ -370,6 +393,8 @@ async function handleDeposit(decodedData, arguments) {
             )
         }
         else {
+
+            
             let temp = {
                 user_id: account,
                 collaterals: collateral_id
@@ -390,7 +415,13 @@ async function handleWithdraw(decodedData, arguments) {
 
         const account = tronWeb.address.fromHex(decodedData.args[0]);
         const asset = tronWeb.address.fromHex(decodedData.args[1]);
-        const amount = Number(decodedData.args[2]._hex)
+        let amount;
+        if (arguments.from == 0) {
+            amount = Number(decodedData.args[2]._hex)
+        }
+        else if (arguments.from == 1) {
+            amount = Number(decodedData.args[2]);
+        }
         arguments.account = account;
         arguments.asset = asset;
         arguments.amount = amount;
@@ -400,10 +431,10 @@ async function handleWithdraw(decodedData, arguments) {
                 txn_id: arguments.txn_id,
                 block_number: arguments.block_number,
                 block_timestamp: arguments.block_timestamp,
-                index: arguments.index
+    
             }
         );
-        console.log("TXN", isDuplicateTxn)
+       
         if (isDuplicateTxn) {
 
             if (isDuplicateTxn.account == account &&
@@ -419,6 +450,9 @@ async function handleWithdraw(decodedData, arguments) {
 
         const withdraw = await Withdraw.create(arguments);
 
+        // get decimals
+       
+
         // UserCollateral
         const userCollateralExist = await UserCollateral.findOne({ user_id: account, collateral: asset }).lean();
         let collateral_id;
@@ -433,12 +467,14 @@ async function handleWithdraw(decodedData, arguments) {
 
         }
         else {
-
+            const collateral = await Collateral.findOne({coll_address : asset}).lean();
+            const decimal = collateral.decimal;
             let obj = {
                 withdraws: withdraw._id.toString(),
                 collateral: asset,
                 balance: -amount,
-                user_id: account
+                user_id: account,
+                decimal: decimal
             };
             const createUserCollateral = await UserCollateral.create(obj);
             collateral_id = createUserCollateral._id.toString()

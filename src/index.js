@@ -4,8 +4,13 @@ const {connect} = require('./db');
 const { userDetails, userTotalCollateral } = require("./controllers/userController");
 const { getAllCollateral, getAllSynth } = require("./controllers/systemController");
 
-connect();
-syncAndListen(SystemConfig);
+
+
+async function run(){
+   await  connect();
+    syncAndListen(SystemConfig);
+}
+run();
 // userTotalCollateral()
 
 // userDetails("TTvnhvkLDqhdXtAGPfCQfPR7ffE8uPVSe6");

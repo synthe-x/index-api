@@ -46,7 +46,7 @@ async function handleNewSynthAsset(decodedData, arguments) {
         let name = await getAssetDetails['name']().call();
         let symbol = await getAssetDetails['symbol']().call();
         let decimal = await getAssetDetails['decimals']().call();
-        console.log(decimal,"decimal Synth");
+        
         let oracle = tronWeb.address.fromHex(decodedData.args[1]);
         let interestRateModel =`${decodedData.args[2]}`;
         let priceOracle = await tronWeb.contract().at(oracle);

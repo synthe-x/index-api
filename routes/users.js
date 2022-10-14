@@ -1,7 +1,7 @@
 var express = require('express');
 const { getPoolDetailsById, getAllPoolDetails } = require('../src/controllers/poolController');
 const { getAllCollateral, getAllSynth } = require('../src/controllers/systemController');
-const { getPoolDetOfUserById, getUserCollateral, getUserAll } = require('../src/controllers/userController');
+const { getPoolDetOfUserById, getUserCollateral, getUserAll, userWalletBalances } = require('../src/controllers/userController');
 var router = express.Router();
 
 /* GET users listing. */
@@ -15,6 +15,7 @@ router.get('/assets/collaterals', getAllCollateral);
 router.get('/assets/synths', getAllSynth);
 router.get('/user/:user_id/debt/:poolIndex', getPoolDetOfUserById );
 router.get('/user/:user_id/collateral', getUserCollateral);
+router.get('/user/wallet/balance/:user_id', userWalletBalances);
 
 router.get('/user/:user_id/all',getUserAll)
 
