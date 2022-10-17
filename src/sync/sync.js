@@ -97,7 +97,7 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
         lastTxnTimestamp = syncDetails.lastBlockTimestamp;
     }
      
-    let req_url = `https://nile.trongrid.io/v1/contracts/${contractAddress}/transactions?order_by=block_timestamp,asc&limit=50&only_confirmed=true&min_block_timestamp=${lastTxnTimestamp}`;
+    let req_url = `https://nile.trongrid.io/v1/contracts/${contractAddress}/transactions?order_by=block_timestamp,asc&limit=50&only_confirmed=false&min_block_timestamp=${lastTxnTimestamp}`;
     let isLastPage = false;
     let errorCount = 0;
     
@@ -185,8 +185,13 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
             }
             else if(isLastPage == true) {
                 await Sync.findOneAndUpdate({},{lastBlockTimestamp : lastTxnTimestamp})
+
+                setTimeout(()=>{
+                    syncAndListen({ contractAddress, abi, handlers });
+                    console.log("Syncing...")
+                },1000)
     
-                return listen({ contractAddress, abi, handlers });
+                
                 
             }
         }
