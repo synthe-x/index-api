@@ -6,7 +6,8 @@ const UserCollateral = new mongoose.Schema({
     collateral: String,
     balance : String,
     user_id : String,
-    decimal : String
+    decimal : String,
+    cAsset : String
 },
 { timestamps: true }
 );

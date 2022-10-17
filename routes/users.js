@@ -1,5 +1,4 @@
 var express = require('express');
-const { run } = require('../src');
 const { getPoolDetailsById, getAllPoolDetails } = require('../src/controllers/poolController');
 const { getAllCollateral, getAllSynth } = require('../src/controllers/systemController');
 const { getPoolDetOfUserById, getUserCollateral, getUserAll, userWalletBalances } = require('../src/controllers/userController');
@@ -22,6 +21,6 @@ router.get('/user/wallet/balance/:user_id', userWalletBalances);
 
 router.get('/user/:user_id/all',getUserAll)
 
-router.get("/test", run);
+
 
 module.exports = router;

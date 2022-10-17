@@ -6,17 +6,12 @@ const { getAllCollateral, getAllSynth } = require("./controllers/systemControlle
 
 
 
-async function run(){
-   await  connect();
-    syncAndListen(SystemConfig);
-//    return res.send({message : "success"})
-}
-run();
-// userTotalCollateral()
+// async function run(){
+//     await connect();
+//     syncAndListen(SystemConfig);
+//     console.log("SYnc Start")
+// }
+// run();
 
-// userDetails("TTvnhvkLDqhdXtAGPfCQfPR7ffE8uPVSe6");
-// getAllCollateral();
-// getAllSynth();
-// TTvnhvkLDqhdXtAGPfCQfPR7ffE8uPVSe6
 
 module.exports = {run};

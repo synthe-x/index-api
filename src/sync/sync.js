@@ -44,7 +44,7 @@ async function listen({ contractAddress, abi, handlers }) {
             instance[total_event[i]]()
                 .watch((err, event) => {
                     if (err) {
-                        console.log("Error while watching", process.cwd(), err.message)
+                        // console.log("Error while watching", process.cwd(), err.message)
                         // return syncAndListen({ contractAddress, abi, handlers });
                     }
                     if (event) {
@@ -170,7 +170,7 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
 
                             if (decoded_data && decoded_data.args != undefined) {
 
-                                console.log("decoded data", decoded_data) 
+                                // console.log("Event", decoded_data.name, decoded_data.args) 
                                 if (handlers[decoded_data["name"]]) {
                                     handlers[decoded_data["name"]](decoded_data, arguments)
                                 }

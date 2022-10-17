@@ -92,7 +92,7 @@ async function handleExchange(decodedData, arguments) {
         let srcOracle = await tronWeb.contract(getABI("SynthERC20"), src);
         let dst_price = (await dstOracle['get_price']().call()).toString() / 10 ** 8;
         let src_price = (await srcOracle['get_price']().call()).toString() / 10 ** 8;
-
+        console.log("exchange",src_amount )
         let dst_amount = (src_price * src_amount) / dst_price;
         arguments.pool_id = pool_id;
         arguments.user_id = user_id;
@@ -123,7 +123,7 @@ async function handleBorrow(decodedData, arguments) {
         else if (arguments.from == 1) {
             amount = Number(decodedData.args[2]);
         }
-        console.log("Borrow Amount", amount)
+       
         arguments.account = account;
         arguments.asset = asset;
         arguments.amount = amount;
@@ -148,7 +148,7 @@ async function handleBorrow(decodedData, arguments) {
             }
 
         }
-
+        console.log("Borrow Amount", amount)
         const borrow = await Borrow.create(arguments);
 
         // get borrowIndex rate from Synth
@@ -238,7 +238,7 @@ async function handleRepay(decodedData, arguments) {
     arguments.account = account;
     arguments.asset = asset;
     arguments.amount = amount;
-    console.log("Repay Amount", amount)
+   
     const isDuplicateTxn = await Repay.findOne(
         {
             txn_id: arguments.txn_id,
@@ -258,6 +258,7 @@ async function handleRepay(decodedData, arguments) {
         }
 
     }
+    console.log("Repay Amount", amount)
     const repay = await Repay.create(arguments);
 
     // get borrowIndex rate from Synth
@@ -335,7 +336,7 @@ async function handleDeposit(decodedData, arguments) {
         else if (arguments.from == 1) {
             amount = Number(decodedData.args[2]);
         }
-        console.log("deposit amount", amount)
+       
         arguments.account = account;
         arguments.asset = asset;
         arguments.amount = amount;
@@ -360,8 +361,10 @@ async function handleDeposit(decodedData, arguments) {
             }
 
         }
-
+        console.log("deposit amount", amount)
         const deposit = await Deposit.create(arguments);
+
+        const collateral = await Collateral.findOne({ coll_address: asset }).lean();
 
         // UserCollateral
         const userCollateralExist = await UserCollateral.findOne({ user_id: account, collateral: asset }).lean();
@@ -379,18 +382,19 @@ async function handleDeposit(decodedData, arguments) {
             // console.log("updateUserCollateral",updateUserCollateral)
         }
         else {
-            const collateral = await Collateral.findOne({ coll_address: asset }).lean();
+           
             const decimal = collateral.decimal;
             let obj = {
                 deposits: deposit._id.toString(),
                 collateral: asset,
                 balance: amount,
                 user_id: account,
-                decimal: decimal
+                decimal: decimal,
+                cAsset : collateral.cAsset
             };
             const createUserCollateral = await UserCollateral.create(obj);
             collateral_id = createUserCollateral._id.toString()
-            // console.log("createUserCollateral",createUserCollateral)
+        
         }
 
         // UserSchema
@@ -459,11 +463,11 @@ async function handleWithdraw(decodedData, arguments) {
             }
 
         }
-
+        console.log("Withraw amount",amount)
         const withdraw = await Withdraw.create(arguments);
 
-        // get decimals
 
+        const collateral = await Collateral.findOne({ coll_address: asset }).lean();
 
         // UserCollateral
         const userCollateralExist = await UserCollateral.findOne({ user_id: account, collateral: asset }).lean();
@@ -479,14 +483,15 @@ async function handleWithdraw(decodedData, arguments) {
 
         }
         else {
-            const collateral = await Collateral.findOne({ coll_address: asset }).lean();
+            
             const decimal = collateral.decimal;
             let obj = {
                 withdraws: withdraw._id.toString(),
                 collateral: asset,
                 balance: -amount,
                 user_id: account,
-                decimal: decimal
+                decimal: decimal,
+                cAsset : collateral.cAsset
             };
             const createUserCollateral = await UserCollateral.create(obj);
             collateral_id = createUserCollateral._id.toString()
