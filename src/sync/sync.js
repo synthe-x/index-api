@@ -48,8 +48,8 @@ async function listen({ contractAddress, abi, handlers }) {
                         // return syncAndListen({ contractAddress, abi, handlers });
                     }
                     if (event) {
-                        console.log("events",event)
-                       return syncAndListen({ contractAddress, abi, handlers });
+                        console.log("events", event)
+                        return syncAndListen({ contractAddress, abi, handlers });
                         /*
                         let res = event.result;
                         let arr = Object.keys(res);
@@ -89,18 +89,18 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
     let lastTxnTimestamp;
     let syncDetails = await Sync.findOne();
 
-    if(!syncDetails){
-        await Sync.create({lastBlockTimestamp:0});
+    if (!syncDetails) {
+        await Sync.create({ lastBlockTimestamp: 0 });
         lastTxnTimestamp = 0;
 
-    }else{
+    } else {
         lastTxnTimestamp = syncDetails.lastBlockTimestamp;
     }
-     
+
     let req_url = `https://nile.trongrid.io/v1/contracts/${contractAddress}/transactions?order_by=block_timestamp,asc&limit=50&only_confirmed=false&min_block_timestamp=${lastTxnTimestamp}`;
     let isLastPage = false;
     let errorCount = 0;
-    
+
 
     sync();
 
@@ -129,8 +129,10 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
             //         total_event.push(abi[i].name)
             //     }
             // }
-           
-            if (await data) {
+
+            let page_loaded = false
+
+            if (data) {
                 for (let i = 0; i < data.length; i++) {
                     let txn_id = data[i].txID;
                     let block_timestamp = data[i].block_timestamp;
@@ -141,8 +143,8 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
                     if (txn_id) {
                         resp_1 = await axios.get(`https://nile.trongrid.io/wallet/gettransactioninfobyid?value=${txn_id}`);
                         encoded_data = resp_1.data.log;
-                       
-                        
+
+
                     }
 
                     if (encoded_data) {
@@ -163,7 +165,7 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
                                 block_number: block_number,
                                 index: index,
                                 address: address,
-                                from : 0
+                                from: 0
                             }
 
                             const decoded_data = await decode_log_data(data_from_log, modified_topics, iface);
@@ -175,32 +177,52 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
                                     handlers[decoded_data["name"]](decoded_data, arguments)
                                 }
                             }
+                          
                         }
                     }
+
+                    if (i == (data.length - 1)) {
+                        page_loaded = true;
+                    }
                 }
+
+                if (page_loaded == true) {
+                    if (isLastPage == false) {
+                        sync();
+                    }
+                    else if (isLastPage == true) {
+                        await Sync.findOneAndUpdate({}, { lastBlockTimestamp: lastTxnTimestamp })
+
+                        setTimeout(() => {
+                            sync();
+                            console.log("Syncing...")
+                        }, 5000)
+
+                        return
+
+                    }
+                }
+
+
+            }else{
+
+                await Sync.findOneAndUpdate({}, { lastBlockTimestamp: lastTxnTimestamp })
+
+                setTimeout(() => {
+                    sync();
+                    console.log("Syncing1...")
+                }, 5000)
+                return
             }
 
-            if (isLastPage == false) {
-                sync();
-            }
-            else if(isLastPage == true) {
-                await Sync.findOneAndUpdate({},{lastBlockTimestamp : lastTxnTimestamp})
 
-                setTimeout(()=>{
-                    syncAndListen({ contractAddress, abi, handlers });
-                    console.log("Syncing...")
-                },1000)
-    
-                
-                
-            }
         }
         catch (error) {
             if (errorCount < 5) {
                 sync();
             }
             else {
-                await Sync.findOneAndUpdate({},{lastBlockTimestamp : lastTxnTimestamp})
+                await Sync.findOneAndUpdate({}, { lastBlockTimestamp: lastTxnTimestamp })
                 console.log(`error`, error.message, error);
             }
 

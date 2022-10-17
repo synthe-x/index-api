@@ -148,12 +148,23 @@ async function handleBorrow(decodedData, arguments) {
             }
 
         }
-        console.log("Borrow Amount", amount)
-        const borrow = await Borrow.create(arguments);
+       
+        let borrow =  Borrow.create(arguments);
 
         // get borrowIndex rate from Synth
 
-        const synth = await Synth.findOne({ synth_id: asset }).lean();
+        let synth =  Synth.findOne({ synth_id: asset }).lean();
+
+        let isUserExist =  User.findOne({ user_id: account });
+
+        let isUserSynthExist =  UserDebt.findOne({ user_id: account, synth_id: asset }).lean();
+
+        let promise  =  await Promise.all([borrow, synth, isUserExist, isUserSynthExist]);
+        borrow = promise[0];
+        synth = promise[1];
+        isUserExist = promise[2];
+        isUserSynthExist = promise[3];
+
         if (!synth) {
             console.log("synth not found", synth);
             return
@@ -168,7 +179,7 @@ async function handleBorrow(decodedData, arguments) {
 
 
         // UserSynth
-        const isUserSynthExist = await UserDebt.findOne({ user_id: account, synth_id: asset }).lean();
+       
         let userDebt_id;
         if (isUserSynthExist) {
             const principal = ((Number(isUserSynthExist.principal) * Number(borrowIndex)) / Number(isUserSynthExist.interestIndex)) + amount;
@@ -196,7 +207,7 @@ async function handleBorrow(decodedData, arguments) {
         };
 
         // UserSchema
-        const isUserExist = await User.findOne({ user_id: account });
+        
 
         if (isUserExist) {
 
@@ -212,8 +223,10 @@ async function handleBorrow(decodedData, arguments) {
                 synths: userDebt_id
             }
 
-            const createUser = await User.create(temp);
+             User.create(temp);
         }
+
+        console.log("Borrow Amount", amount)
     }
     catch (error) {
         console.log("Error in listening", process.cwd(), error.message)
