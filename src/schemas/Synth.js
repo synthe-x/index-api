@@ -12,7 +12,8 @@ const SynthSchema = new mongoose.Schema({
     totalBorrowed: String,
     debtTracker_id : String,
     decimal :String,
-    apy : String
+    apy : String,
+    liquidity : String
 
 },
 { timestamps: true }

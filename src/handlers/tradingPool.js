@@ -29,7 +29,7 @@ async function handleNewTradingPool(decodedData, arguments) {
         arguments.name = name;
         arguments.symbol = symbol;
 
-        await TradingPool.create(arguments);
+         TradingPool.create(arguments);
 
 
     }

@@ -182,14 +182,16 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
 
             if (isLastPage == false) {
                 sync();
+                return
             }
             else if(isLastPage == true) {
                 await Sync.findOneAndUpdate({},{lastBlockTimestamp : lastTxnTimestamp})
 
                 setTimeout(()=>{
                     syncAndListen({ contractAddress, abi, handlers });
-                    console.log("Syncing...")
-                },1000)
+                    
+                    // console.log("Syncing...")
+                },5000)
     
                 return
                 

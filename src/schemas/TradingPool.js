@@ -8,15 +8,11 @@ const TradingPoolSchema = new mongoose.Schema({
     pool_address : String,
     name: String,
     symbol: String,
-    Debt: [String],
+    poolSynth_ids: [String],
 },
 { timestamps: true }
 );
 
-// const PoolDebt = new mongoose.Schema({
-//     pool: String,
-//     asset: String,
-//     balance: String
-// })
+
 
 module.exports = TradingPoolSchema;

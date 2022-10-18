@@ -605,7 +605,8 @@ async function userWalletBalances(req, res) {
                 decimal: collateral[i].decimal,
                 amount: amount,
                 id: collateral[i].coll_address,
-                minCollateral: `${collateral[i].minCollateral}`
+                minCollateral: `${collateral[i].minCollateral}`,
+                liquidity : collateral[i].liquidity
             }
             collaterals.push(_colateral)
         }
@@ -631,7 +632,8 @@ async function userWalletBalances(req, res) {
                 decimal: synth[i].decimal,
                 id: synth[i].synth_id,
                 apy: synth[i].apy,
-                amount : amount
+                amount : amount,
+                liquidity : synth[i].totalBorrowed
             }
             
             synths.push(_synth)

@@ -68,7 +68,8 @@ async function handleNewSynthAsset(decodedData, arguments) {
             borrowIndex: `${10 ** 18}`,
             debtTracker_id : debtTracker,
             decimal : decimal,
-            apy : apy
+            apy : apy,
+            liquidity : '0'
         }
         const createNewSynth = await Synth.create(temp);
 

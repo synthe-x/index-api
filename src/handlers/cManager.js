@@ -17,56 +17,41 @@ async function _handleNewCollateralAsset(decodedData, arguments) {
 };
 async function handleNewCollateralAsset(decodedData, arguments) {
     // get synth from db
-   
+
     try {
         const asset_address = tronWeb.address.fromHex(decodedData.args[0]);
         let cManager = await getContract("CollateralManager");
-        let cAsset = tronWeb.address.fromHex( await cManager.methods.assetToCAsset(decodedData.args[0]).call() );
-        // console.log("-- cAsset --", tronWeb.address.fromHex(cAsset));
+        let cAsset = tronWeb.address.fromHex(await cManager.methods.assetToCAsset(decodedData.args[0]).call());
         syncAndListen(CollateralConfig(cAsset));
 
-        const isCollExist = await Collateral.findOne({coll_address : asset_address}).lean();
-        if(isCollExist){
+        const isCollExist = await Collateral.findOne({ coll_address: asset_address }).lean();
+        if (isCollExist) {
             console.log("Asset already exist");
             return
         }
-        /*
-        if (decodedData.args[0] == "0x0000000000000000000000000000000000000000" ||
-        decodedData.args[0] == "0x00000000000000000000000000000000000f54e9") {
-            let name = "Tron";
-            let symbol = "TRX";
-            let oracle = tronWeb.address.fromHex(decodedData.args[1]);
-            let priceOracle = await tronWeb.contract().at(oracle);
-            let price = (await priceOracle['latestAnswer']().call()).toString() / 10 ** 8;
-            let minCollateral = Number(decodedData.args[2]);
-            arguments.name = name;
-            arguments.symbol = symbol;
-            arguments.price = price;
-            arguments.oracle = oracle;
-            arguments.minCollateral = minCollateral;
-            arguments.coll_address = asset_address;
-            let creatCollateral = await Collateral.create(arguments);
-            
-            return;
 
-        }
-        */
-       
+
         const getAssetDetails = await tronWeb.contract().at(asset_address);
 
-        let name = await getAssetDetails['name']().call();
-       
-        let symbol = await getAssetDetails['symbol']().call();
+        let name = getAssetDetails['name']().call();
 
-        let decimal = await getAssetDetails['decimals']().call();
-        
-       
+        let symbol = getAssetDetails['symbol']().call();
+
+        let decimal = getAssetDetails['decimals']().call();
+
         let oracle = tronWeb.address.fromHex(decodedData.args[1]);
         let minCollateral = Number(decodedData.args[2]);
-        
-        let priceOracle = await tronWeb.contract().at(oracle);
+
+        let priceOracle = tronWeb.contract().at(oracle);
+
+        let promise = await Promise.all([name, symbol, decimal, priceOracle]);
+        name = promise[0];
+        symbol = promise[1];
+        decimal = promise[2];
+        priceOracle = promise[3]
+
         let price = (await priceOracle['latestAnswer']().call()).toString() / 10 ** 8;
-    
+
         arguments.name = name;
         arguments.symbol = symbol;
         arguments.price = price;
@@ -75,9 +60,11 @@ async function handleNewCollateralAsset(decodedData, arguments) {
         arguments.coll_address = asset_address;
         arguments.decimal = decimal;
         arguments.cAsset = cAsset;
+        arguments.liquidity = '0';
 
-        let creatCollateral = await Collateral.create(arguments);
-    
+        Collateral.create(arguments);
+        console.log("Collateral added")
+
     }
     catch (error) {
         console.log("Error", error.message, error);
