@@ -4,7 +4,7 @@ const { Collateral, Synth } = require("../db");
 
 async function getAllCollateral(req, res){
     try{
-        const all_collateral  =  await Collateral.find().select({name:1, symbol:1, price:1, coll_address:1, _id:0 }).lean();
+        const all_collateral  =  await Collateral.find().select({name:1, symbol:1, price:1, coll_address:1, cAsset:1, decimal: 1, _id:0 }).lean();
         return res.status(200).send({status: true, data : all_collateral});
     }
     catch(error){
