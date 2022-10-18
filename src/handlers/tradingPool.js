@@ -1,4 +1,4 @@
-const { TradingPool, PoolEntered, PoolExited, UserTrading, Exchange, User } = require("../db");
+const { TradingPool, PoolEntered, PoolExited, UserTrading, Exchange, User, PoolSynth } = require("../db");
 const { tronWeb, getABI } = require("../utils");
 
 async function handleNewTradingPool(decodedData, arguments) {
@@ -29,7 +29,7 @@ async function handleNewTradingPool(decodedData, arguments) {
         arguments.name = name;
         arguments.symbol = symbol;
 
-         TradingPool.create(arguments);
+        TradingPool.create(arguments);
 
 
     }
@@ -71,22 +71,40 @@ async function handlePoolEntered(decodedData, arguments) {
         arguments.amount = amount;
 
         await PoolEntered.create(arguments);
+      
 
-        const createUserTrading = await UserTrading.create(arguments);
+        let poolSynth = await PoolSynth.findOne({ pool_address: pool_address, synth_id: asset_id }).lean();
+        let currentBalance = Number(poolSynth.balance) + Number(amount)
+
+        await PoolSynth.findOneAndUpdate({ pool_address: pool_address, synth_id: asset_id }, {$set: { balance: currentBalance } });
+
+        let createUserTrading;
+
+        let findUserTrading = await UserTrading.findOne({ pool_address: pool_address, user_id: user_id, asset_id: asset_id });
+
+        if (findUserTrading) {
+
+            let currAmount = Number(findUserTrading.amount) + Number(amount);
+            await UserTrading.findOneAndUpdate({ _id: findUserTrading._id }, { $set: { amount: currAmount } })
+        }
+        else {
+            createUserTrading = await UserTrading.create(arguments);
+        }
+
 
         // update in user
-        const findUser = await User.findOne({user_id : user_id}).lean();
+        const findUser = await User.findOne({ user_id: user_id }).lean();
 
-        if(findUser){
+        if (findUser) {
             await User.findOneAndUpdate(
-                {user_id : user_id},
-                {$addToSet : {tradings :createUserTrading._id.toString() }}
+                { user_id: user_id },
+                { $addToSet: { tradings: createUserTrading._id.toString() } }
             )
         }
-        else{
+        else {
             let temp = {
-                user_id : user_id,
-                tradings : createUserTrading._id.toString()
+                user_id: user_id,
+                tradings: createUserTrading._id.toString()
             }
 
             await User.create(temp);
@@ -132,13 +150,18 @@ async function handlePoolExited(decodedData, arguments) {
 
         await PoolExited.create(arguments);
 
-        let userTrad = await UserTrading.findOne({asset_id : asset_id,user_id : user_id, pool_id : pool_id}).lean();
-        let currentAmount = Number(userTrad.amount) - amount;
+        let poolSynth = await PoolSynth.findOne({ pool_address: pool_address, synth_id: asset_id }).lean();
+        let currentBalance = Number(poolSynth.balance) - Number(amount)
+
+        await PoolSynth.findOneAndUpdate({ pool_address: pool_address, synth_id: asset_id }, {$set: { balance: currentBalance } });
+
+        let userTrad = await UserTrading.findOne({ asset_id: asset_id, user_id: user_id, pool_id: pool_id }).lean();
+        let currentAmount = Number(userTrad.amount) - Number(amount);
 
         await UserTrading.findOneAndUpdate(
-            {asset_id : asset_id,user_id : user_id, pool_id : pool_id},
-            {$set : {amount : currentAmount}},
-            {new : true}
+            { asset_id: asset_id, user_id: user_id, pool_id: pool_id },
+            { $set: { amount: currentAmount } },
+            { new: true }
         )
     }
     catch (error) {
@@ -146,12 +169,12 @@ async function handlePoolExited(decodedData, arguments) {
     }
 }
 
-async function handleExchangeTrading(decodedData,arguments) {
-    try{
+async function handleExchangeTrading(decodedData, arguments) {
+    try {
 
         const pool_id = Number(decodedData.args[0]);
         const user_id = tronWeb.address.fromHex(decodedData.args[1]);
-        const src =  tronWeb.address.fromHex(decodedData.args[2]);
+        const src = tronWeb.address.fromHex(decodedData.args[2]);
         const src_amount = `${Number(decodedData.args[3])}`;
         const dst = tronWeb.address.fromHex(decodedData.args[4]);
 
@@ -159,8 +182,8 @@ async function handleExchangeTrading(decodedData,arguments) {
         let srcOracle = await tronWeb.contract(getABI("SynthERC20"), src);
         let dst_price = (await dstOracle['get_price']().call()).toString() / 10 ** 8;
         let src_price = (await srcOracle['get_price']().call()).toString() / 10 ** 8;
-       
-        let dst_amount = (src_price * src_amount) / dst_price ;
+
+        let dst_amount = (src_price * src_amount) / dst_price;
         arguments.pool_id = pool_id;
         arguments.user_id = user_id;
         arguments.src = src;
@@ -169,14 +192,14 @@ async function handleExchangeTrading(decodedData,arguments) {
         arguments.dst_amount = dst_amount;
         await Exchange.create(arguments);
 
-        await  UserTrading.findOneAndUpdate(
-            {user_id : user_id, pool_id : pool_id, asset_id : src},
-            {$set : {asset_id : dst,amount : dst_amount}},
-            {new : true}
+        await UserTrading.findOneAndUpdate(
+            { user_id: user_id, pool_id: pool_id, asset_id: src },
+            { $set: { asset_id: dst, amount: dst_amount } },
+            { new: true }
         )
 
     }
-    catch(error){
+    catch (error) {
         console.log("Error @ handleExchange", error.message)
     }
 
