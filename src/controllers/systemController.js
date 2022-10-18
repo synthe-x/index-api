@@ -15,9 +15,9 @@ async function getAllCollateral(req, res){
 };
 
 async function getAllSynth(req, res){
-   
+
     try{
-        const all_synth = await Synth.find().select({oracle:0, accrualTimestamp:0, totalBorrowed:0 ,debtTracker_id:0, _id:0 }).lean();
+        const all_synth = await Synth.find().select({oracle:0, accrualTimestamp:0, debtTracker_id:0, _id:0 }).lean();
     
         return res.status(200).send({status: true, data : all_synth});
     }

@@ -1,4 +1,4 @@
-const { TradingPool, Synth, PoolSynth } = require("../db");
+const { TradingPool, Synth, PoolSynth, TradingVolume } = require("../db");
 
 
 
@@ -54,23 +54,85 @@ const getAllPoolDetails =   async function(req, res){
 const getUserPoolDetails = async function(req, res){
     try{
 
-        // let user_id = req.params.user_id;
+        let user_id = req.params.user_id;
 
         let allSynth = await Synth.find().select({});
 
         console.log("allSynth", allSynth);
 
 
-        // const getAllPool = await TradingPool.find().select({pool_address:1, name:1, symbol:1, Debt:1, _id : 0 }).lean();
-        return res.status(200).send({status: true, data : "getAllPool"});
+        const getAllPool = await TradingPool.find().select({pool_address:1, name:1, symbol:1, Debt:1, _id : 0 }).lean();
+        return res.status(200).send({status: true, data : getAllPool});
     }
     catch(error){
         console.log("Error @ getPoolDetailsById", error)
         return res.status(500).send({ msg: error.message, status: false });
     }
 
+};
+
+
+const getPoolVolumes = async function(req, res){
+
+    try{
+
+        let pool_id = req.params.pool_id;
+
+        let tradingVol = await TradingVolume.find({pool_id : pool_id}).sort({dayId : 1});
+
+        let dayId = [];
+        for(let i in tradingVol){
+            let ele = tradingVol[i].dayId;
+            dayId.push(ele)
+        }
+        dayId = uniq = [...new Set(dayId)]
+
+        let data = [];
+
+        for(let i in dayId){
+
+            
+            let findPoolSynth = await TradingPool.findOne({pool_id : pool_id});
+            let allSynthInPool = findPoolSynth.poolSynth_ids;
+
+            let res = []
+            for(let j in allSynthInPool){
+                let synthId = await PoolSynth.findOne({_id : allSynthInPool[j]})
+                let DaytradingVol = await TradingVolume.findOne({dayId : dayId[i], synth_id : synthId.synth_id});
+                console.log(DaytradingVol)
+                if(!DaytradingVol){
+                    let temp = {
+                        synth_id : allSynthInPool[j],
+                        amount : "0"
+                    }
+                    res.push(temp)
+
+                }else{
+                    let temp = {
+                        synth_id : allSynthInPool[j],
+                        amount : DaytradingVol.amount
+                    }
+                   
+                    res.push(temp)
+                }
+            }
+            let obj = {
+                dayId : dayId[i],
+                volume : res
+
+            };
+
+            data.push(obj)
+        }
+       
+        return res.status(200).send({status: true, data : data});
+    }
+    catch(error){
+        console.log("Error @ getPoolVolumes", error)
+        return res.status(500).send({ msg: error.message, status: false });
+    }
 }
 
 
 
-module.exports = {getAllPoolDetails, getPoolDetailsById, getUserPoolDetails};
+module.exports = {getAllPoolDetails, getPoolDetailsById, getUserPoolDetails, getPoolVolumes};

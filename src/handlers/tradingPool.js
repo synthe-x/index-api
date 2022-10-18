@@ -1,4 +1,4 @@
-const { TradingPool, PoolEntered, PoolExited, UserTrading, Exchange, User, PoolSynth } = require("../db");
+const { TradingPool, PoolEntered, PoolExited, UserTrading, Exchange, User, PoolSynth, TradingVolume } = require("../db");
 const { tronWeb, getABI } = require("../utils");
 
 async function handleNewTradingPool(decodedData, arguments) {
@@ -72,7 +72,7 @@ async function handlePoolEntered(decodedData, arguments) {
 
         await PoolEntered.create(arguments);
 
-
+        // update pool synth
         let poolSynth = await PoolSynth.findOne({ pool_address: pool_address, synth_id: asset_id }).lean();
         let currentBalance = Number(poolSynth.balance) + Number(amount)
 
@@ -85,7 +85,7 @@ async function handlePoolEntered(decodedData, arguments) {
         if (findUserTrading) {
 
             let currAmount = Number(findUserTrading.amount) + Number(amount);
-            await UserTrading.findOneAndUpdate({ _id: findUserTrading._id }, { $set: { amount: currAmount } })
+            createUserTrading = await UserTrading.findOneAndUpdate({ _id: findUserTrading._id }, { $set: { amount: currAmount } })
         }
         else {
             createUserTrading = await UserTrading.create(arguments);
@@ -111,7 +111,7 @@ async function handlePoolEntered(decodedData, arguments) {
         }
     }
     catch (error) {
-        console.log("Error @ handlePoolEntered", error.message);
+        console.log("Error @ handlePoolEntered", error);
     }
 
 }
@@ -173,6 +173,20 @@ async function handlePoolExited(decodedData, arguments) {
 async function handleExchangeTrading(decodedData, arguments) {
     try {
 
+
+        const isDuplicateTxn = await Exchange.findOne(
+            {
+                txn_id: arguments.txn_id,
+                block_number: arguments.block_number,
+                block_timestamp: arguments.block_timestamp
+        
+            }
+        );
+
+        if (isDuplicateTxn) {
+
+            return;
+        }
         const pool_id = Number(decodedData.args[0]);
         const user_id = tronWeb.address.fromHex(decodedData.args[1]);
         const src = tronWeb.address.fromHex(decodedData.args[2]);
@@ -193,7 +207,7 @@ async function handleExchangeTrading(decodedData, arguments) {
         arguments.dst_amount = dst_amount;
         Exchange.create(arguments);
 
-
+        // update poolSynth
         let findUserTrading = await UserTrading.findOne({ user_id: user_id, pool_id: pool_id, asset_id: src });
 
         let poolSynthSrc = await PoolSynth.findOne({ pool_address: findUserTrading.pool_address, synth_id: src }).lean();
@@ -207,6 +221,29 @@ async function handleExchangeTrading(decodedData, arguments) {
         let currentBalanceDst = Number(poolSynthDst.balance) + Number(dst_amount);
 
         await PoolSynth.findOneAndUpdate({ pool_address: findUserTrading.pool_address, synth_id: dst }, { $set: { balance: currentBalanceDst } });
+
+        // update Trading volume
+
+        let dayId = Math.ceil( Number(arguments.block_timestamp) / (24 * 60 * 60 * 1000) );
+
+        let findTradingVol = await TradingVolume.findOne({dayId : dayId, synth_id : dst, pool_id : pool_id});
+
+        if(findTradingVol){
+            let currAmount = Number(findTradingVol.amount) + Number(dst_amount);
+            await TradingVolume.findOneAndUpdate(
+                {dayId : dayId, synth_id : dst},
+                {$set : {amount : currAmount}}
+            )
+        }else{
+            let temp = {
+                dayId : dayId,
+                synth_id : dst,
+                amount : dst_amount,
+                pool_id : pool_id
+            }
+
+            TradingVolume.create(temp)
+        }
 
 
         let currSrcAmount = Number(findUserTrading.amount) - Number(src_amount);

@@ -71,14 +71,9 @@ async function handleExchange(decodedData, arguments) {
         );
 
         if (isDuplicateTxn) {
-            if (isDuplicateTxn.pool_id == pool_id &&
-                isDuplicateTxn.user_id == user_id &&
-                isDuplicateTxn.src_amount == src_amount) {
-                return
-            }
-            else {
-                arguments.index = isDuplicateTxn.index + 1;
-            }
+
+            return
+
 
         }
 
@@ -87,9 +82,11 @@ async function handleExchange(decodedData, arguments) {
             return;
         }
 
-
-        let dstOracle = await tronWeb.contract(getABI("SynthERC20"), dst);
-        let srcOracle = await tronWeb.contract(getABI("SynthERC20"), src);
+        let dstOracle =  tronWeb.contract(getABI("SynthERC20"), dst);
+        let srcOracle =  tronWeb.contract(getABI("SynthERC20"), src);
+        let promise = await Promise.all([dstOracle, srcOracle]);
+        dstOracle = promise[0];
+        srcOracle = promise[1];
         let dst_price = (await dstOracle['get_price']().call()).toString() / 10 ** 8;
         let src_price = (await srcOracle['get_price']().call()).toString() / 10 ** 8;
         console.log("exchange", src_amount)
@@ -100,7 +97,7 @@ async function handleExchange(decodedData, arguments) {
         arguments.src_amount = src_amount;
         arguments.dst = dst;
         arguments.dst_amount = dst_amount;
-        await Exchange.create(arguments);
+        Exchange.create(arguments);
 
     }
     catch (error) {
@@ -397,7 +394,7 @@ async function handleDeposit(decodedData, arguments) {
         userCollateralExist = promise[2];
 
         let liquidity = Number(collateral.liquidity) + Number(amount);
-        console.log("Dep", Number(collateral.liquidity), Number(amount), liquidity)
+
         await Collateral.findByIdAndUpdate({ _id: collateral._id }, { $set: { liquidity: liquidity } });
 
         let collateral_id;
@@ -591,7 +588,7 @@ async function handleSynthEnabledInTradingPool(decodedData, arguments) {
 
         if (isDuplicateTxn) {
 
-           return
+            return
 
         }
 
@@ -605,25 +602,25 @@ async function handleSynthEnabledInTradingPool(decodedData, arguments) {
             arguments.pool_address = pool_address;
             arguments.synth_id = synth_id;
             arguments.balance = '0';
-           let createPoolSynth =  PoolSynth.create(arguments);
-           poolPromise.push(createPoolSynth);
+            let createPoolSynth = PoolSynth.create(arguments);
+            poolPromise.push(createPoolSynth);
         };
 
         let promise = await Promise.all(poolPromise);
         let poolSynth_ids = []
-        for(let i in promise){
+        for (let i in promise) {
             let id = promise[i]._id.toString();
             poolSynth_ids.push(id)
         }
 
         await TradingPool.findOneAndUpdate(
-            {pool_address : pool_address},
-            {$addToSet : {poolSynth_ids : poolSynth_ids}},
-            {new : true}
+            { pool_address: pool_address },
+            { $addToSet: { poolSynth_ids: poolSynth_ids } },
+            { new: true }
         );
 
-        
-       
+
+
     }
     catch (error) {
         console.log("Error in handleSynthEnabledInTradingPool", process.cwd(), error)
