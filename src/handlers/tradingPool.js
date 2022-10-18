@@ -71,12 +71,12 @@ async function handlePoolEntered(decodedData, arguments) {
         arguments.amount = amount;
 
         await PoolEntered.create(arguments);
-      
+
 
         let poolSynth = await PoolSynth.findOne({ pool_address: pool_address, synth_id: asset_id }).lean();
         let currentBalance = Number(poolSynth.balance) + Number(amount)
 
-        await PoolSynth.findOneAndUpdate({ pool_address: pool_address, synth_id: asset_id }, {$set: { balance: currentBalance } });
+        await PoolSynth.findOneAndUpdate({ pool_address: pool_address, synth_id: asset_id }, { $set: { balance: currentBalance } });
 
         let createUserTrading;
 
@@ -148,12 +148,13 @@ async function handlePoolExited(decodedData, arguments) {
         arguments.asset_id = asset_id;
         arguments.amount = amount;
 
-        await PoolExited.create(arguments);
+        PoolExited.create(arguments);
+        
 
         let poolSynth = await PoolSynth.findOne({ pool_address: pool_address, synth_id: asset_id }).lean();
         let currentBalance = Number(poolSynth.balance) - Number(amount)
 
-        await PoolSynth.findOneAndUpdate({ pool_address: pool_address, synth_id: asset_id }, {$set: { balance: currentBalance } });
+        await PoolSynth.findOneAndUpdate({ pool_address: pool_address, synth_id: asset_id }, { $set: { balance: currentBalance } });
 
         let userTrad = await UserTrading.findOne({ asset_id: asset_id, user_id: user_id, pool_id: pool_id }).lean();
         let currentAmount = Number(userTrad.amount) - Number(amount);
@@ -190,13 +191,53 @@ async function handleExchangeTrading(decodedData, arguments) {
         arguments.src_amount = src_amount;
         arguments.dst = dst;
         arguments.dst_amount = dst_amount;
-        await Exchange.create(arguments);
+        Exchange.create(arguments);
 
+
+        let findUserTrading = await UserTrading.findOne({ user_id: user_id, pool_id: pool_id, asset_id: src });
+
+        let poolSynthSrc = await PoolSynth.findOne({ pool_address: findUserTrading.pool_address, synth_id: src }).lean();
+
+        let currentBalanceSrc = Number(poolSynthSrc.balance) - Number(src_amount);
+
+        await PoolSynth.findOneAndUpdate({ pool_address: findUserTrading.pool_address, synth_id: src }, { $set: { balance: currentBalanceSrc } });
+
+        let poolSynthDst = await PoolSynth.findOne({ pool_address: findUserTrading.pool_address, synth_id: dst }).lean();
+
+        let currentBalanceDst = Number(poolSynthDst.balance) + Number(dst_amount);
+
+        await PoolSynth.findOneAndUpdate({ pool_address: findUserTrading.pool_address, synth_id: dst }, { $set: { balance: currentBalanceDst } });
+
+
+        let currSrcAmount = Number(findUserTrading.amount) - Number(src_amount);
         await UserTrading.findOneAndUpdate(
             { user_id: user_id, pool_id: pool_id, asset_id: src },
-            { $set: { asset_id: dst, amount: dst_amount } },
+            { $set: { amount: currSrcAmount } },
             { new: true }
-        )
+        );
+
+        let findDstInUserTrading = await UserTrading.findOne({ user_id: user_id, pool_id: pool_id, asset_id: dst });
+
+        if (findDstInUserTrading) {
+            let currSrcAmount = Number(findDstInUserTrading.amount) + Number(dst_amount);
+            await UserTrading.findOneAndUpdate(
+                { user_id: user_id, pool_id: pool_id, asset_id: dst },
+                { $set: { amount: currSrcAmount } },
+                { new: true }
+            );
+        } else {
+            let temp = {
+                txn_id: arguments.txn_id,
+                block_number: arguments.block_number,
+                block_timestamp: arguments.block_timestamp,
+                pool_address: findUserTrading.pool_address,
+                pool_id: pool_id,
+                user_id: user_id,
+                amount: dst_amount,
+                asset_id: dst
+            }
+            UserTrading.create(temp)
+        }
 
     }
     catch (error) {
