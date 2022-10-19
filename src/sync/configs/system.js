@@ -1,5 +1,5 @@
 const {handleNewCollateralAsset} = require('../../handlers/cManager');
-const {handleNewSynthAsset} = require('../../handlers/dManager');
+const {handleNewSynthAsset} = require('../../handlers/dmanager');
 const {handleNewMinCRatio, handleNewSafeCRatio, handleDeposit, handleWithdraw, handleExchange, handleBorrow, handleRepay, handleLiquidate, handleSynthEnabledInTradingPool} = require('../../handlers/system');
 const {handleNewTradingPool, handlePoolEntered, handlePoolExited} = require("../../handlers/tradingPool")
 

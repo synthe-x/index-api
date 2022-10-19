@@ -1,27 +1,23 @@
 version: "3"
 services:
   # Mongo DB for scorer
-  mongo:
-    image: mongo:6.0
-    restart: always
-    ports:
-      - 27017:27017
-    volumes:
-      - ./data/mongo:/data/db
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=password
-  # Scorer Node
-  # scorer:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     - mongo
-  #   expose:
-  #     - "${PORT}"
+  # mongo:
+  #   image: mongo:6.0
+  #   restart: always
   #   ports:
-  #     - "${PORT}:${PORT}"
+  #     - 27017:27017
+  #   volumes:
+  #     - ./data/mongo:/data/db
+  #   environment:
+  #     - MONGO_INITDB_ROOT_USERNAME=root
+  #     - MONGO_INITDB_ROOT_PASSWORD=password
+  # Scorer Node
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "7878:3030"
   #   environment:
   #     - PORT=${PORT}
   #     - ANALYSER_PORT=${ANALYSER_PORT}
@@ -37,4 +33,4 @@ services:
   #     - HOLDINGS_COLLECTION_NAME=${HOLDINGS_COLLECTION_NAME}
   #     - CREDIT_COLLECTION_NAME=${CREDIT_COLLECTION_NAME}
   #     - MASTER_API_KEY=${MASTER_API_KEY}
-  #   command: npm run start
+    command: npm run start
