@@ -2,18 +2,18 @@ const { TradingPool, Synth, PoolSynth, TradingVolume } = require("../db");
 
 
 
-const getPoolDetailsById = async function(req, res){
+const getPoolDetailsById = async function (req, res) {
 
-    try{
+    try {
 
         let pool_id = req.params.poolIndex;
-       
-        const getPool = await TradingPool.findOne({pool_id : pool_id}).select({pool_address:1, name:1, symbol:1, Debt:1, _id : 0 }).lean();
-       
-        return res.status(200).send({status: true, data : getPool});
-       
+
+        const getPool = await TradingPool.findOne({ pool_id: pool_id }).select({ pool_address: 1, name: 1, symbol: 1, Debt: 1, _id: 0 }).lean();
+
+        return res.status(200).send({ status: true, data: getPool });
+
     }
-    catch(error){
+    catch (error) {
         console.log("Error @ getPoolDetailsById", error)
         return res.status(500).send({ msg: error.message, status: false });
     }
@@ -21,28 +21,28 @@ const getPoolDetailsById = async function(req, res){
 
 
 
-const getAllPoolDetails =   async function(req, res){
+const getAllPoolDetails = async function (req, res) {
 
-    try{
-        let getAllPool = await TradingPool.find().select({pool_id:1, pool_address : 1, name : 1, symbol : 1,  poolSynth_ids : 1 , _id :0}).lean();
-    
-        for(let i in getAllPool){
+    try {
+        let getAllPool = await TradingPool.find().select({ pool_id: 1, pool_address: 1, name: 1, symbol: 1, poolSynth_ids: 1, _id: 0 }).lean();
+
+        for (let i in getAllPool) {
 
             let synthIds = getAllPool[i].poolSynth_ids;
 
             let pool_synthBalance = []
-            for(let j in synthIds){
-                
-                let poolSynth = await PoolSynth.findById({_id :synthIds[j] }).select({synth_id : 1, balance : 1, _id : 0}).lean();
-                let synthDetails = await Synth.findOne({synth_id : poolSynth.synth_id}).select({name : 1, symbol : 1, price : 1, _id : 0}).lean()
-                pool_synthBalance.push({...poolSynth, ...synthDetails});
+            for (let j in synthIds) {
+
+                let poolSynth = await PoolSynth.findById({ _id: synthIds[j] }).select({ synth_id: 1, balance: 1, _id: 0 }).lean();
+                let synthDetails = await Synth.findOne({ synth_id: poolSynth.synth_id }).select({ name: 1, symbol: 1, price: 1, _id: 0 }).lean()
+                pool_synthBalance.push({ ...poolSynth, ...synthDetails });
             }
             getAllPool[i].poolSynth_ids = pool_synthBalance;
 
         }
-        return res.status(200).send({status: true, data : getAllPool});
+        return res.status(200).send({ status: true, data: getAllPool });
     }
-    catch(error){
+    catch (error) {
         console.log("Error @ getPoolDetailsById", error)
         return res.status(500).send({ msg: error.message, status: false });
     }
@@ -51,8 +51,8 @@ const getAllPoolDetails =   async function(req, res){
 
 
 
-const getUserPoolDetails = async function(req, res){
-    try{
+const getUserPoolDetails = async function (req, res) {
+    try {
 
         let user_id = req.params.user_id;
 
@@ -61,10 +61,10 @@ const getUserPoolDetails = async function(req, res){
         console.log("allSynth", allSynth);
 
 
-        const getAllPool = await TradingPool.find().select({pool_address:1, name:1, symbol:1, Debt:1, _id : 0 }).lean();
-        return res.status(200).send({status: true, data : getAllPool});
+        const getAllPool = await TradingPool.find().select({ pool_address: 1, name: 1, symbol: 1, Debt: 1, _id: 0 }).lean();
+        return res.status(200).send({ status: true, data: getAllPool });
     }
-    catch(error){
+    catch (error) {
         console.log("Error @ getPoolDetailsById", error)
         return res.status(500).send({ msg: error.message, status: false });
     }
@@ -72,16 +72,21 @@ const getUserPoolDetails = async function(req, res){
 };
 
 
-const getPoolVolumes = async function(req, res){
+const getPoolVolumes = async function (req, res) {
 
-    try{
+    try {
 
         let pool_id = req.params.pool_id;
 
-        let tradingVol = await TradingVolume.find({pool_id : pool_id}).sort({dayId : 1});
+        let tradingVol = TradingVolume.find({ pool_id: pool_id }).sort({ dayId: 1 });
+        let findPoolSynth = TradingPool.findOne({ pool_id: pool_id });
+
+        let promise = await Promise.all([tradingVol, findPoolSynth]);
+        tradingVol = promise[0];
+        findPoolSynth = promise[1];
 
         let dayId = [];
-        for(let i in tradingVol){
+        for (let i in tradingVol) {
             let ele = tradingVol[i].dayId;
             dayId.push(ele)
         }
@@ -89,45 +94,56 @@ const getPoolVolumes = async function(req, res){
 
         let data = [];
 
-        for(let i in dayId){
+        let allSynthInPool = findPoolSynth.poolSynth_ids;
 
-            
-            let findPoolSynth = await TradingPool.findOne({pool_id : pool_id});
-            let allSynthInPool = findPoolSynth.poolSynth_ids;
+        let promise_synthId = [];
+        for (let j in allSynthInPool) {
+            let synthId = PoolSynth.findOne({ _id: allSynthInPool[j] });
+            promise_synthId.push(synthId);
+        }
 
-            let res = []
-            for(let j in allSynthInPool){
-                let synthId = await PoolSynth.findOne({_id : allSynthInPool[j]})
-                let DaytradingVol = await TradingVolume.findOne({dayId : dayId[i], synth_id : synthId.synth_id});
-                console.log(DaytradingVol)
-                if(!DaytradingVol){
-                    let temp = {
-                        synth_id : allSynthInPool[j],
-                        amount : "0"
-                    }
-                    res.push(temp)
+        promise_synthId = await Promise.all(promise_synthId);
 
-                }else{
-                    let temp = {
-                        synth_id : allSynthInPool[j],
-                        amount : DaytradingVol.amount
-                    }
+        for (let i in dayId) {
+
+            let obj = {
+                dayId: dayId[i]
+            };
+   
+            let promise_synth_trad = []
+            for (let j in allSynthInPool) {
+
+                let synthDetails = Synth.findOne({ synth_id: promise_synthId[j].synth_id });
+                let daytradingVol = TradingVolume.findOne({ dayId: dayId[i], synth_id: promise_synthId[j].synth_id });
+                promise_synth_trad.push(synthDetails, daytradingVol);
+
+            }
+
+            promise_synth_trad = await Promise.all(promise_synth_trad);
+            for (let j in allSynthInPool) {
+
+                let daytradingVol = promise_synth_trad[2 * j + 1];
+                let synthDetails = promise_synth_trad[2 * j];
+
+                if (!daytradingVol) {
                    
-                    res.push(temp)
+                    obj[`${synthDetails.symbol}`] = `0`
+
+                } else {
+                   
+                   obj[`${synthDetails.symbol}`] = `${Number(daytradingVol.amount) / 10**18}`
+
+                  
                 }
             }
-            let obj = {
-                dayId : dayId[i],
-                volume : res
-
-            };
+           
 
             data.push(obj)
         }
-       
-        return res.status(200).send({status: true, data : data});
+
+        return res.status(200).send({ status: true, data: data });
     }
-    catch(error){
+    catch (error) {
         console.log("Error @ getPoolVolumes", error)
         return res.status(500).send({ msg: error.message, status: false });
     }
@@ -135,4 +151,4 @@ const getPoolVolumes = async function(req, res){
 
 
 
-module.exports = {getAllPoolDetails, getPoolDetailsById, getUserPoolDetails, getPoolVolumes};
+module.exports = { getAllPoolDetails, getPoolDetailsById, getUserPoolDetails, getPoolVolumes };
