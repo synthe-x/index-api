@@ -90,7 +90,7 @@ const getPoolVolumes = async function (req, res) {
             let ele = tradingVol[i].dayId;
             dayId.push(ele)
         }
-        dayId = uniq = [...new Set(dayId)]
+        dayId  = [...new Set(dayId)]
 
         let data = [];
 
@@ -114,7 +114,7 @@ const getPoolVolumes = async function (req, res) {
             for (let j in allSynthInPool) {
 
                 let synthDetails = Synth.findOne({ synth_id: promise_synthId[j].synth_id });
-                let daytradingVol = TradingVolume.findOne({ dayId: dayId[i], synth_id: promise_synthId[j].synth_id });
+                let daytradingVol = TradingVolume.findOne({ dayId: dayId[i], synth_id: promise_synthId[j].synth_id, pool_id : pool_id });
                 promise_synth_trad.push(synthDetails, daytradingVol);
 
             }

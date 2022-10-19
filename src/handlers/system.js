@@ -7,47 +7,57 @@ const { handleExchangeTrading } = require("./tradingPool");
 
 
 async function handleNewMinCRatio(decodedData, arguments) {
+    try {
+        const minCollateralRatio = Big(Number(decodedData.args[0]._hex)).div(Big(10).pow(18)).toNumber()
+        const system = await System.findOne({ id: "1" }).lean();
 
-    const minCollateralRatio = Big(Number(decodedData.args[0]._hex)).div(Big(10).pow(18)).toNumber()
-    const system = await System.findOne({ id: "1" }).lean();
+        if (system) {
+            await System.findOneAndUpdate(
+                { id: "1" },
+                { $set: { minCollateralRatio: minCollateralRatio } },
+                { new: true }
+            );
+        } else {
+            const address = await getAddress("System");
+            let obj = {
+                address: address,
+                minCollateralRatio: minCollateralRatio,
+                id: "1"
+            }
+            System.create(obj);
 
-    if (system) {
-        await System.findOneAndUpdate(
-            { id: "1" },
-            { $set: { minCollateralRatio: minCollateralRatio } },
-            { new: true }
-        );
-    } else {
-        const address = await getAddress("System");
-        let obj = {
-            address: address,
-            minCollateralRatio: minCollateralRatio,
-            id: "1"
         }
-        System.create(obj);
-
     }
+    catch (error) {
+        console.log("Error @ handleNewMinCRatio", error)
+    }
+
 }
 
 async function handleNewSafeCRatio(decodedData, arguments) {
 
-    const safeCollateralRatio = Big(Number(decodedData.args[0]._hex)).div(Big(10).pow(18)).toNumber()
-    const system = await System.findOne({ id: "1" }).lean();
-    if (system) {
-        await System.findOneAndUpdate(
-            { id: "1" },
-            { $set: { safeCollateralRatio: safeCollateralRatio } },
-            { new: true }
-        );
-    } else {
-        const address = await getAddress("System");
-        let obj = {
-            address: address,
-            safeCollateralRatio: safeCollateralRatio,
-            id: "1"
-        }
-        System.create(obj);
+    try {
+        const safeCollateralRatio = Big(Number(decodedData.args[0]._hex)).div(Big(10).pow(18)).toNumber()
+        const system = await System.findOne({ id: "1" }).lean();
+        if (system) {
+            await System.findOneAndUpdate(
+                { id: "1" },
+                { $set: { safeCollateralRatio: safeCollateralRatio } },
+                { new: true }
+            );
+        } else {
+            const address = await getAddress("System");
+            let obj = {
+                address: address,
+                safeCollateralRatio: safeCollateralRatio,
+                id: "1"
+            }
+            System.create(obj);
 
+        }
+    }
+    catch (error) {
+        console.log("Error @ handleNewSafeCRatio", error)
     }
 }
 
@@ -71,10 +81,7 @@ async function handleExchange(decodedData, arguments) {
         );
 
         if (isDuplicateTxn) {
-
             return
-
-
         }
 
         if (pool_id != '0') {
@@ -82,8 +89,8 @@ async function handleExchange(decodedData, arguments) {
             return;
         }
 
-        let dstOracle =  tronWeb.contract(getABI("SynthERC20"), dst);
-        let srcOracle =  tronWeb.contract(getABI("SynthERC20"), src);
+        let dstOracle = tronWeb.contract(getABI("SynthERC20"), dst);
+        let srcOracle = tronWeb.contract(getABI("SynthERC20"), src);
         let promise = await Promise.all([dstOracle, srcOracle]);
         dstOracle = promise[0];
         srcOracle = promise[1];
@@ -98,6 +105,7 @@ async function handleExchange(decodedData, arguments) {
         arguments.dst = dst;
         arguments.dst_amount = dst_amount;
         Exchange.create(arguments);
+        console.log("Reseve Exchange",)
 
     }
     catch (error) {
@@ -230,7 +238,7 @@ async function handleBorrow(decodedData, arguments) {
         console.log("Borrow Amount", amount)
     }
     catch (error) {
-        console.log("Error in listening", process.cwd(), error.message)
+        console.log("Error in handleBorrow", process.cwd(), error)
     }
 
 
@@ -238,108 +246,113 @@ async function handleBorrow(decodedData, arguments) {
 
 async function handleRepay(decodedData, arguments) {
 
-    const account = tronWeb.address.fromHex(decodedData.args[0]);
-    const asset = tronWeb.address.fromHex(decodedData.args[1]);
+    try {
+        const account = tronWeb.address.fromHex(decodedData.args[0]);
+        const asset = tronWeb.address.fromHex(decodedData.args[1]);
 
-    let amount;
-    if (arguments.from == 0) {
-        amount = decodedData.args[2].toString()
-    }
-    else if (arguments.from == 1) {
-        amount = Number(decodedData.args[2]);
-    }
-
-    arguments.account = account;
-    arguments.asset = asset;
-    arguments.amount = amount;
-
-    const isDuplicateTxn = await Repay.findOne(
-        {
-            txn_id: arguments.txn_id,
-            block_number: arguments.block_number,
-            block_timestamp: arguments.block_timestamp
+        let amount;
+        if (arguments.from == 0) {
+            amount = decodedData.args[2].toString()
         }
-    );
+        else if (arguments.from == 1) {
+            amount = Number(decodedData.args[2]);
+        }
 
-    if (isDuplicateTxn) {
-        if (isDuplicateTxn.account == account &&
-            isDuplicateTxn.asset == asset &&
-            isDuplicateTxn.amount == amount) {
-            return
+        arguments.account = account;
+        arguments.asset = asset;
+        arguments.amount = amount;
+
+        const isDuplicateTxn = await Repay.findOne(
+            {
+                txn_id: arguments.txn_id,
+                block_number: arguments.block_number,
+                block_timestamp: arguments.block_timestamp
+            }
+        );
+
+        if (isDuplicateTxn) {
+            if (isDuplicateTxn.account == account &&
+                isDuplicateTxn.asset == asset &&
+                isDuplicateTxn.amount == amount) {
+                return
+            }
+            else {
+                arguments.index = isDuplicateTxn.index + 1;
+            }
+
+        }
+       
+        const repay = await Repay.create(arguments);
+
+        // get borrowIndex rate from Synth
+        const synth = await Synth.findOne({ synth_id: asset }).lean();
+
+        if (!synth) {
+            return ("synth not found", synth)
+        };
+
+        let liquidity = Number(synth.liquidity) - Number(amount);
+        await Synth.findByIdAndUpdate({ _id: synth._id }, { $set: { liquidity: liquidity } })
+
+        const getAssetDetails = await tronWeb.contract(getABI("DebtTracker"), synth.debtTracker_id);
+        let interestRate = await getAssetDetails['get_interest_rate']().call();
+
+        const apy = ((Number(interestRate._hex) / 10 ** 18) + 1) ** (365 * 24 * 3600) - 1;
+
+        let borrowIndex = synth.borrowIndex;
+
+        // User Repay
+        const isUserSynthExist = await UserDebt.findOne({ user_id: account, synth_id: asset }).lean();
+        let userDebt_id;
+        if (isUserSynthExist) {
+            const principal = ((Number(isUserSynthExist.principal) * Number(borrowIndex)) / Number(isUserSynthExist.interestIndex)) - amount;
+            const updateBorrowing = await UserDebt.findOneAndUpdate(
+                { user_id: account, synth_id: asset },
+                { $set: { principal: principal, interestIndex: borrowIndex, apy: apy }, $addToSet: { repays: repay._id } },
+                { new: true }
+            )
+            userDebt_id = updateBorrowing._id;
+
         }
         else {
-            arguments.index = isDuplicateTxn.index + 1;
+            let temp = {
+                user_id: account,
+                synth_id: asset,
+                principal: -amount,
+                interestIndex: borrowIndex,
+                repays: repay._id,
+                apy: apy
+            }
+
+            const creatUserSynth = await UserDebt.create(temp);
+            userDebt_id = creatUserSynth._id;
         }
 
-    }
-    console.log("Repay Amount", amount)
-    const repay = await Repay.create(arguments);
+        // UserSchema
+        const isUserExist = await User.findOne({ user_id: account });
 
-    // get borrowIndex rate from Synth
-    const synth = await Synth.findOne({ synth_id: asset }).lean();
+        if (isUserExist) {
 
-    if (!synth) {
-        return ("synth not found", synth)
-    };
+            const updateUserDebt = await User.findOneAndUpdate(
+                { user_id: account },
+                { $addToSet: { synths: userDebt_id } },
+                { new: true }
+            )
+        }
+        else {
+            let temp = {
+                user_id: account,
+                synths: userDebt_id
+            }
 
-    let liquidity = Number(synth.liquidity) - Number(amount);
-    await Synth.findByIdAndUpdate({ _id: synth._id }, { $set: { liquidity: liquidity } })
-
-    const getAssetDetails = await tronWeb.contract(getABI("DebtTracker"), synth.debtTracker_id);
-    let interestRate = await getAssetDetails['get_interest_rate']().call();
-
-    const apy = ((Number(interestRate._hex) / 10 ** 18) + 1) ** (365 * 24 * 3600) - 1;
-
-    let borrowIndex = synth.borrowIndex;
-
-    // User Repay
-    const isUserSynthExist = await UserDebt.findOne({ user_id: account, synth_id: asset }).lean();
-    let userDebt_id;
-    if (isUserSynthExist) {
-        const principal = ((Number(isUserSynthExist.principal) * Number(borrowIndex)) / Number(isUserSynthExist.interestIndex)) - amount;
-        const updateBorrowing = await UserDebt.findOneAndUpdate(
-            { user_id: account, synth_id: asset },
-            { $set: { principal: principal, interestIndex: borrowIndex, apy: apy }, $addToSet: { repays: repay._id } },
-            { new: true }
-        )
-        userDebt_id = updateBorrowing._id;
-
-    }
-    else {
-        let temp = {
-            user_id: account,
-            synth_id: asset,
-            principal: -amount,
-            interestIndex: borrowIndex,
-            repays: repay._id,
-            apy: apy
+            const createUser = await User.create(temp);
         }
 
-        const creatUserSynth = await UserDebt.create(temp);
-        userDebt_id = creatUserSynth._id;
+        console.log("Repay Amount", amount)
     }
-
-    // UserSchema
-    const isUserExist = await User.findOne({ user_id: account });
-
-    if (isUserExist) {
-
-        const updateUserDebt = await User.findOneAndUpdate(
-            { user_id: account },
-            { $addToSet: { synths: userDebt_id } },
-            { new: true }
-        )
+    catch (error) {
+        console.log("Error in handleRepay", process.cwd(), error)
     }
-    else {
-        let temp = {
-            user_id: account,
-            synths: userDebt_id
-        }
-
-        const createUser = await User.create(temp);
-    }
-
-    console.log("Repay Amount", amount)
 
 }
 
@@ -408,7 +421,6 @@ async function handleDeposit(decodedData, arguments) {
             );
             collateral_id = updateUserCollateral._id.toString();
 
-            // console.log("updateUserCollateral",updateUserCollateral)
         }
         else {
 
@@ -452,7 +464,7 @@ async function handleDeposit(decodedData, arguments) {
 
     }
     catch (error) {
-        console.log("Error in handleDeposit", process.cwd(), error.message)
+        console.log("Error in handleDeposit", process.cwd(), error)
     }
 
 }
@@ -587,11 +599,8 @@ async function handleSynthEnabledInTradingPool(decodedData, arguments) {
         );
 
         if (isDuplicateTxn) {
-
             return
-
         }
-
 
         let pool_address = tronWeb.address.fromHex(decodedData.args[0]);
 

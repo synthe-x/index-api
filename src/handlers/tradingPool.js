@@ -22,15 +22,18 @@ async function handleNewTradingPool(decodedData, arguments) {
         const pool_id = Number(decodedData.args[1]);
         let poolDetails = await tronWeb.contract(getABI("TradingPool"), pool_address);
 
-        let name = await poolDetails['name']().call();
-        let symbol = await poolDetails['symbol']().call();
+        let name =  poolDetails['name']().call();
+        let symbol =  poolDetails['symbol']().call();
+        let promise = await Promise.all([name, symbol]);
+        name = promise[0];
+        symbol = promise[1];
         arguments.pool_id = pool_id;
         arguments.pool_address = pool_address;
         arguments.name = name;
         arguments.symbol = symbol;
 
         TradingPool.create(arguments);
-
+        console.log("New Trading pool", amount)
 
     }
     catch (error) {
