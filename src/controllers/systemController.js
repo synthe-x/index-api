@@ -1,4 +1,4 @@
-const { Collateral, Synth, System } = require("../db");
+const { Collateral, Synth, System, Sync } = require("../db");
 
 
 
@@ -31,14 +31,19 @@ async function getAllSynth(req, res){
 async function getSystemInfo(req, res){
     try{
         let systemInfo = await System.findOne().lean();
+        let sync = await Sync.findOne().lean()
 
         if(!systemInfo){
             systemInfo = {
                 minCollateralRatio : '130',
-                safeCollateralRatio : '200'
-
+                safeCollateralRatio : '200',
+                blockNumber : sync.blockNumber ?? "0"
             }
+        }else{
+            systemInfo.blockNumber = sync.blockNumber ?? "0"
         }
+       
+
     
         return res.status(200).send({status: true, data : systemInfo});
     }

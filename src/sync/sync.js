@@ -193,9 +193,10 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
     }
 }
 
-
+let lastTxnTimestamp;
+let lastBlockNumber;
 async function _syncAndListen({ contractAddress, abi, handlers }) {
-    let lastTxnTimestamp;
+   
     let syncDetails = await Sync.findOne();
 
     if (!syncDetails) {
@@ -253,6 +254,7 @@ async function _syncAndListen({ contractAddress, abi, handlers }) {
                         
                     }
                     lastTxnTimestamp =  data[i].block_timestamp;
+                    lastBlockNumber = data[i].block_number
                     // console.log(arguments)
                     if (handlers[data[i]["event_name"]] && data[i].result != undefined) {
                        await handlers[data[i]["event_name"]](data[i], arguments)
@@ -270,7 +272,7 @@ async function _syncAndListen({ contractAddress, abi, handlers }) {
 
                 if (handlers["NewSynthAsset"]) {
                   
-                    await Sync.findOneAndUpdate({}, { lastBlockTimestamp: lastTxnTimestamp })
+                    await Sync.findOneAndUpdate({}, {$set: {lastBlockTimestamp: lastTxnTimestamp , blockNumber: lastBlockNumber} })
                     _syncAndListen({ contractAddress, abi, handlers });
                     return
                 }
@@ -284,7 +286,7 @@ async function _syncAndListen({ contractAddress, abi, handlers }) {
         catch (error) {
             if (handlers["NewSynthAsset"]) {
     
-                await Sync.findOneAndUpdate({}, { lastBlockTimestamp: lastTxnTimestamp })
+                await Sync.findOneAndUpdate({}, {$set: {lastBlockTimestamp: lastTxnTimestamp , blockNumber: lastBlockNumber} })
                 _syncAndListen({ contractAddress, abi, handlers });
                 return
             }
