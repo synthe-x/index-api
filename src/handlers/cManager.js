@@ -19,17 +19,18 @@ async function handleNewCollateralAsset(decodedData, arguments) {
     // get synth from db
 
     try {
+       
         const asset_address = tronWeb.address.fromHex(decodedData.args[0]);
-        let cManager = await getContract("CollateralManager");
-        let cAsset = tronWeb.address.fromHex(await cManager.methods.assetToCAsset(decodedData.args[0]).call());
-        syncAndListen(CollateralConfig(cAsset));
-
         const isCollExist = await Collateral.findOne({ coll_address: asset_address }).lean();
         if (isCollExist) {
-            console.log("Asset already exist");
+            // console.log("Asset already exist");
             return
         }
 
+       
+        let cManager = await getContract("CollateralManager");
+        let cAsset = tronWeb.address.fromHex(await cManager.methods.assetToCAsset(decodedData.args[0]).call());
+        syncAndListen(CollateralConfig(cAsset));
 
         const getAssetDetails = await tronWeb.contract().at(asset_address);
 

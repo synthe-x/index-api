@@ -8,7 +8,7 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 const {connect} = require('./src/db');
 const cors = require('cors');
-const { syncAndListen } = require('./src/sync/sync');
+const { syncAndListen, _syncAndListen } = require('./src/sync/sync');
 const { SystemConfig } = require('./src/sync/configs/system');
 
 var app = express();
@@ -26,7 +26,7 @@ connect();
 app.use('/', indexRouter);
 // app.use('/users', usersRouter);
 app.use('/', usersRouter);
-syncAndListen(SystemConfig);
+_syncAndListen(SystemConfig);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));

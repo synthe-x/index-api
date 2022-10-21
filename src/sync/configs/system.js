@@ -2,7 +2,7 @@ const {handleNewCollateralAsset} = require('../../handlers/cManager');
 const {handleNewSynthAsset} = require('../../handlers/dmanager');
 const {handleNewMinCRatio, handleNewSafeCRatio, handleDeposit, handleWithdraw, handleExchange, handleBorrow, handleRepay, handleLiquidate, handleSynthEnabledInTradingPool} = require('../../handlers/system');
 const {handleNewTradingPool, handlePoolEntered, handlePoolExited} = require("../../handlers/tradingPool")
-
+const { handleAccureInterest} = require("../../handlers/synth");
 const {getAddress, getABI} = require("../../utils");
 
 const SystemConfig = {
@@ -22,7 +22,8 @@ const SystemConfig = {
         "Deposit": handleDeposit,
         "Withdraw": handleWithdraw,
         "Exchange": handleExchange,
-        "SynthEnabledInTradingPool" : handleSynthEnabledInTradingPool
+        "SynthEnabledInTradingPool" : handleSynthEnabledInTradingPool,
+        "AccureInterest": handleAccureInterest
     }
 }
 

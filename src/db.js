@@ -40,21 +40,21 @@ const PoolSynth = mongoose.model("PoolSynth", poolSynthSchema)
 const TradingVolume = mongoose.model("TradingVolume", TradingVolumeSchema)
 
 
-// async function connect() {
-//     mongoose.connect("mongodb+srv://g-2-project-1:MvD9HwLH72zL105K@cluster0.j1yrl.mongodb.net/chainscore-index-3?retryWrites=true&w=majority", {
-//     useNewUrlParser: true
-// }) .then(() => console.log("MongoDb is connected"))
-// .catch(err => console.log(err))
-
-// }
-
 async function connect() {
-    mongoose.connect("mongodb://root:password@localhost:27017/?authMechanism=DEFAULT", {
-        useNewUrlParser: true
-    }).then(() => console.log("MongoDb is connected"))
-        .catch(err => console.log(err))
+    mongoose.connect("mongodb+srv://g-2-project-1:MvD9HwLH72zL105K@cluster0.j1yrl.mongodb.net/chainscore-api-index?retryWrites=true&w=majority", {
+    useNewUrlParser: true
+}) .then(() => console.log("MongoDb is connected"))
+.catch(err => console.log(err))
 
 }
+
+// async function connect() {
+//     mongoose.connect("mongodb://root:password@localhost:27017/?authMechanism=DEFAULT", {
+//         useNewUrlParser: true
+//     }).then(() => console.log("MongoDb is connected"))
+//         .catch(err => console.log(err))
+
+// }
 
 
 module.exports = { System, User, UserDebt, UserCollateral, Collateral, Synth, UserTrading, TradingPool, connect, Deposit, Borrow, Repay, Withdraw, Exchange, PoolEntered, PoolExited, Sync, PoolSynth, TradingVolume}

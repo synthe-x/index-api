@@ -5,6 +5,8 @@ const Big = require('big.js');
 const { getAddress } = require('../utils');
 const { handleExchangeTrading } = require("./tradingPool");
 
+const {parseAccureInterest} = require('./synth')
+
 
 async function handleNewMinCRatio(decodedData, arguments) {
     try {
@@ -85,10 +87,10 @@ async function handleExchange(decodedData, arguments) {
         }
 
         if (pool_id != '0') {
-            handleExchangeTrading(decodedData, arguments)
+           await handleExchangeTrading(decodedData, arguments)
             return;
         }
-
+        parseAccureInterest(arguments.txn_id);
         let dstOracle = tronWeb.contract(getABI("SynthERC20"), dst);
         let srcOracle = tronWeb.contract(getABI("SynthERC20"), src);
         let promise = await Promise.all([dstOracle, srcOracle]);
@@ -154,6 +156,8 @@ async function handleBorrow(decodedData, arguments) {
             }
 
         }
+
+        parseAccureInterest(arguments.txn_id);
 
         let borrow = Borrow.create(arguments);
 
@@ -257,7 +261,7 @@ async function handleRepay(decodedData, arguments) {
         else if (arguments.from == 1) {
             amount = Number(decodedData.args[2]);
         }
-
+        
         arguments.account = account;
         arguments.asset = asset;
         arguments.amount = amount;
@@ -281,7 +285,9 @@ async function handleRepay(decodedData, arguments) {
             }
 
         }
-       
+
+        
+        parseAccureInterest(arguments.txn_id);
         const repay = await Repay.create(arguments);
 
         // get borrowIndex rate from Synth
@@ -574,7 +580,7 @@ async function handleWithdraw(decodedData, arguments) {
         }
 
         console.log("Withraw amount", amount)
-
+        return
     }
     catch (error) {
         console.log("Error in handleWithdraw", process.cwd(), error)
@@ -586,9 +592,10 @@ function handleLiquidate(decodedData) {
     // event Liquidate(address pool, address liquidator, address account, address asset, uint amount);
 };
 
-async function handleSynthEnabledInTradingPool(decodedData, arguments) {
+async function _handleSynthEnabledInTradingPool(decodedData, arguments) {
     try {
 
+        // console.log("decodedData", decodedData)
         const isDuplicateTxn = await PoolSynth.findOne(
             {
                 txn_id: arguments.txn_id,
@@ -629,7 +636,59 @@ async function handleSynthEnabledInTradingPool(decodedData, arguments) {
         );
 
 
+        return
+    }
+    catch (error) {
+        console.log("Error in handleSynthEnabledInTradingPool", process.cwd(), error)
+    }
 
+}
+async function handleSynthEnabledInTradingPool(decodedData, arguments) {
+    try {
+       
+       // for new Sync
+        const isDuplicateTxn = await PoolSynth.findOne(
+            {
+                txn_id: arguments.txn_id,
+                block_number: arguments.block_number,
+                block_timestamp: arguments.block_timestamp,
+
+            }
+        );
+
+        if (isDuplicateTxn) {
+            return
+        }
+
+        let pool_address = tronWeb.address.fromHex(decodedData.args[0]);
+
+        let arrayOfSynthEnb = decodedData.args[1].split('\n');
+      
+        let poolPromise = [];
+        for (let i in arrayOfSynthEnb) {
+            let synth_id = tronWeb.address.fromHex(arrayOfSynthEnb[i]);
+            arguments.pool_address = pool_address;
+            arguments.synth_id = synth_id;
+            arguments.balance = '0';
+            let createPoolSynth = PoolSynth.create(arguments);
+            poolPromise.push(createPoolSynth);
+        };
+
+        let promise = await Promise.all(poolPromise);
+        let poolSynth_ids = []
+        for (let i in promise) {
+            let id = promise[i]._id.toString();
+            poolSynth_ids.push(id)
+        }
+
+        await TradingPool.findOneAndUpdate(
+            { pool_address: pool_address },
+            { $addToSet: { poolSynth_ids: poolSynth_ids } },
+            { new: true }
+        );
+
+
+        return
     }
     catch (error) {
         console.log("Error in handleSynthEnabledInTradingPool", process.cwd(), error)

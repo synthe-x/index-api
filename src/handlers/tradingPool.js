@@ -33,11 +33,11 @@ async function handleNewTradingPool(decodedData, arguments) {
         arguments.symbol = symbol;
 
         TradingPool.create(arguments);
-        console.log("New Trading pool", amount)
+        console.log("New Trading pool", pool_id)
 
     }
     catch (error) {
-        console.log("Error @ handleNewTradingPool", error.message);
+        console.log("Error @ handleNewTradingPool", error);
     }
 }
 
@@ -54,7 +54,6 @@ async function handlePoolEntered(decodedData, arguments) {
         );
 
         if (isDuplicateTxn) {
-
             return;
         };
         const pool_address = tronWeb.address.fromHex(decodedData.args[0]);
@@ -112,6 +111,8 @@ async function handlePoolEntered(decodedData, arguments) {
 
             await User.create(temp);
         }
+
+        console.log("Pool Entered", amount, pool_id)
     }
     catch (error) {
         console.log("Error @ handlePoolEntered", error);
@@ -159,17 +160,23 @@ async function handlePoolExited(decodedData, arguments) {
 
         await PoolSynth.findOneAndUpdate({ pool_address: pool_address, synth_id: asset_id }, { $set: { balance: currentBalance } });
 
-        let userTrad = await UserTrading.findOne({ asset_id: asset_id, user_id: user_id, pool_id: pool_id }).lean();
-        let currentAmount = Number(userTrad.amount) - Number(amount);
 
-        await UserTrading.findOneAndUpdate(
-            { asset_id: asset_id, user_id: user_id, pool_id: pool_id },
-            { $set: { amount: currentAmount } },
-            { new: true }
-        )
+       let findUserTrading = await UserTrading.findOne({ pool_address: pool_address, user_id: user_id, asset_id: asset_id });
+
+        if (findUserTrading) {
+
+            let currAmount = Number(findUserTrading.amount) - Number(amount);
+            createUserTrading = await UserTrading.findOneAndUpdate({ _id: findUserTrading._id }, { $set: { amount: currAmount } })
+        }
+        else {
+            arguments.amount = -Number(amount);
+            createUserTrading = await UserTrading.create(arguments);
+        }
+
+        console.log("Pool Exited", amount, pool_id)
     }
     catch (error) {
-        console.log("Error @ handlePoolExited", error.message);
+        console.log("Error @ handlePoolExited", error);
     }
 }
 
@@ -187,7 +194,6 @@ async function handleExchangeTrading(decodedData, arguments) {
         );
 
         if (isDuplicateTxn) {
-
             return;
         }
         const pool_id = Number(decodedData.args[0]);
@@ -196,8 +202,11 @@ async function handleExchangeTrading(decodedData, arguments) {
         const src_amount = `${Number(decodedData.args[3])}`;
         const dst = tronWeb.address.fromHex(decodedData.args[4]);
 
-        let dstOracle = await tronWeb.contract(getABI("SynthERC20"), dst);
-        let srcOracle = await tronWeb.contract(getABI("SynthERC20"), src);
+        let dstOracle =  tronWeb.contract(getABI("SynthERC20"), dst);
+        let srcOracle =  tronWeb.contract(getABI("SynthERC20"), src);
+        let promise = await Promise.all([dstOracle, srcOracle]);
+        dstOracle = promise[0];
+        srcOracle = promise[1];
         let dst_price = (await dstOracle['get_price']().call()).toString() / 10 ** 8;
         let src_price = (await srcOracle['get_price']().call()).toString() / 10 ** 8;
 
@@ -211,7 +220,7 @@ async function handleExchangeTrading(decodedData, arguments) {
         Exchange.create(arguments);
 
         // update poolSynth
-        let findUserTrading = await UserTrading.findOne({ user_id: user_id, pool_id: pool_id, asset_id: src });
+        let findUserTrading = await TradingPool.findOne({ pool_id : pool_id });
 
         let poolSynthSrc = await PoolSynth.findOne({ pool_address: findUserTrading.pool_address, synth_id: src }).lean();
 
@@ -279,9 +288,11 @@ async function handleExchangeTrading(decodedData, arguments) {
             UserTrading.create(temp)
         }
 
+        console.log("Exchanged @ pool", pool_id)
+
     }
     catch (error) {
-        console.log("Error @ handleExchange", error.message)
+        console.log("Error @ handleExchangePool", error)
     }
 
 

@@ -58,7 +58,7 @@ const getUserPoolDetails = async function (req, res) {
 
         let allSynth = await Synth.find().select({});
 
-        console.log("allSynth", allSynth);
+        // console.log("allSynth", allSynth);
 
 
         const getAllPool = await TradingPool.find().select({ pool_address: 1, name: 1, symbol: 1, Debt: 1, _id: 0 }).lean();
@@ -77,6 +77,10 @@ const getPoolVolumes = async function (req, res) {
     try {
 
         let pool_id = req.params.pool_id;
+
+        if(!["1","2","3","4","5"].includes(pool_id)){
+            return res.status(400).send({ status: true, data: "pool id not valid" });
+        }
 
         let tradingVol = TradingVolume.find({ pool_id: pool_id }).sort({ dayId: 1 });
         let findPoolSynth = TradingPool.findOne({ pool_id: pool_id });

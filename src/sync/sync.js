@@ -5,6 +5,7 @@ const axios = require('axios');
 const ethers = require('ethers');
 const { Sync } = require('../db');
 const { tronWeb, getABI } = require("../utils");
+// const { SystemConfig } = require('./configs/system');
 
 function decode_log_data(data, topics, iface) {
     try {
@@ -15,20 +16,6 @@ function decode_log_data(data, topics, iface) {
         return
     }
 };
-
-
-// async function decode(data, topics) {
-//     let abi = getABI("System");
-//     const iface = new ethers.utils.Interface(abi);
-//     const getData = await decode_log_data(data, topics, iface);
-//     console.log(getData);
-
-// }
-// decode("0x0000000000000000000000000000000000000000000000000000000000989680", [
-//     '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-//     '0x0000000000000000000000000000000000000000000000000000000000000000',
-//     '0x000000000000000000000000928c9af0651632157ef27a2cf17ca72c575a4d21'
-// ]);
 
 
 async function listen({ contractAddress, abi, handlers }) {
@@ -48,8 +35,8 @@ async function listen({ contractAddress, abi, handlers }) {
                         // return syncAndListen({ contractAddress, abi, handlers });
                     }
                     if (event) {
-                        console.log("events",event)
-                       return syncAndListen({ contractAddress, abi, handlers });
+                        console.log("events", event)
+                        return syncAndListen({ contractAddress, abi, handlers });
                         /*
                         let res = event.result;
                         let arr = Object.keys(res);
@@ -85,23 +72,22 @@ async function listen({ contractAddress, abi, handlers }) {
 }
 
 
+
 async function syncAndListen({ contractAddress, abi, handlers }) {
     let lastTxnTimestamp;
     let syncDetails = await Sync.findOne();
 
-    if(!syncDetails){
-        await Sync.create({lastBlockTimestamp:0});
+    if (!syncDetails) {
+        await Sync.create({ lastBlockTimestamp: 0 });
         lastTxnTimestamp = 0;
 
-    }else{
+    } else {
         lastTxnTimestamp = syncDetails.lastBlockTimestamp;
     }
-     
-    let req_url = `https://nile.trongrid.io/v1/contracts/${contractAddress}/transactions?order_by=block_timestamp,asc&limit=50&only_confirmed=false&min_block_timestamp=${lastTxnTimestamp}`;
-    let isLastPage = false;
-    let errorCount = 0;
-    
 
+    let req_url = `https://nile.trongrid.io/v1/contracts/${contractAddress}/transactions?order_by=block_timestamp,asc&limit=50&only_confirmed=false&min_block_timestamp=${lastTxnTimestamp}`;
+    let isLastPage;;
+   
     sync();
 
     async function sync() {
@@ -112,24 +98,22 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
             //     req_url = isContractExist.req_url;
             // }
 
+           
+
             let resp = await axios.get(req_url);
 
             if (resp.data.meta.links) {
                 req_url = resp.data.meta.links.next
+                isLastPage = false
             } else {
                 isLastPage = true;
             }
 
+           
+
             let data = resp.data.data
             const iface = new ethers.utils.Interface(abi);
 
-            // let total_event = [];
-            // for (let i in abi) {
-            //     if (abi[i].type == "event") {
-            //         total_event.push(abi[i].name)
-            //     }
-            // }
-           
             if (await data) {
                 for (let i = 0; i < data.length; i++) {
                     let txn_id = data[i].txID;
@@ -141,8 +125,8 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
                     if (txn_id) {
                         resp_1 = await axios.get(`https://nile.trongrid.io/wallet/gettransactioninfobyid?value=${txn_id}`);
                         encoded_data = resp_1.data.log;
-                       
-                        
+
+
                     }
 
                     if (encoded_data) {
@@ -163,13 +147,13 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
                                 block_number: block_number,
                                 index: index,
                                 address: address,
-                                from : 0
+                                from: 0
                             }
 
                             const decoded_data = await decode_log_data(data_from_log, modified_topics, iface);
-
+                           
                             if (decoded_data && decoded_data.args != undefined) {
-
+                               
                                 // console.log("Event", decoded_data.name, decoded_data.args) 
                                 if (handlers[decoded_data["name"]]) {
                                     handlers[decoded_data["name"]](decoded_data, arguments)
@@ -178,38 +162,140 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
                         }
                     }
                 }
+
             }
 
-            if (isLastPage == false) {
-                sync();
+            if (isLastPage === false) {
+                sync()
                 return
             }
-            else if(isLastPage == true) {
-                await Sync.findOneAndUpdate({},{lastBlockTimestamp : lastTxnTimestamp})
+            else if (isLastPage === true) {
 
-                setTimeout(()=>{
+                if (handlers["NewSynthAsset"]) {
+                  
+                    await Sync.findOneAndUpdate({}, { lastBlockTimestamp: lastTxnTimestamp })
                     syncAndListen({ contractAddress, abi, handlers });
-                    
-                    // console.log("Syncing...")
-                },5000)
-    
+                    return
+                }
                 return
-                
             }
+
+
         }
         catch (error) {
-            if (errorCount < 5) {
-                sync();
+            if (handlers["NewSynthAsset"]) {
+    
+                await Sync.findOneAndUpdate({}, { lastBlockTimestamp: lastTxnTimestamp })
+                syncAndListen({ contractAddress, abi, handlers });
+                return
             }
-            else {
-                await Sync.findOneAndUpdate({},{lastBlockTimestamp : lastTxnTimestamp})
-                console.log(`error`, error.message, error);
-            }
-
         }
     }
 }
 
-module.exports = { syncAndListen }
+
+async function _syncAndListen({ contractAddress, abi, handlers }) {
+    let lastTxnTimestamp;
+    let syncDetails = await Sync.findOne();
+
+    if (!syncDetails) {
+        await Sync.create({ lastBlockTimestamp: 0 });
+        lastTxnTimestamp = 0;
+
+    } else {
+        lastTxnTimestamp = syncDetails.lastBlockTimestamp;
+    }
+
+    let req_url = `https://nile.trongrid.io/v1/contracts/${contractAddress}/events?order_by=block_timestamp,asc&limit=50&only_confirmed=false&min_block_timestamp=${lastTxnTimestamp}`;
+    let isLastPage;
+   
+
+
+    _sync();
+
+    async function _sync() {
+        try {
+            
+
+            let resp = await axios.get(req_url);
+            
+            if (resp.data.meta.links) {
+                req_url = resp.data.meta.links.next
+                isLastPage = false
+            } else {
+                isLastPage = true;
+            }
+
+            let data = resp.data.data
+           
+
+            if ( data) {
+
+                for(let i in data){
+
+                    let res = data[i].result;
+                    let arr = Object.keys(res);
+                    let len = Object.keys(res).length;
+                    let args = [];
+                    for (let i = 0; i < len / 2; i++) {
+                        args.push(res[`${arr[i]}`])
+                    };
+                   
+                    data[i].args = args;
+                    
+                    let arguments = {
+                        txn_id: data[i].transaction_id,
+                        block_timestamp: data[i].block_timestamp,
+                        block_number: data[i].block_number,
+                        index: data[i].event_index,
+                        address : data[i].contract_address,
+                        from : 0
+                        
+                    }
+                    lastTxnTimestamp =  data[i].block_timestamp;
+                    // console.log(arguments)
+                    if (handlers[data[i]["event_name"]] && data[i].result != undefined) {
+                       await handlers[data[i]["event_name"]](data[i], arguments)
+                    }
+
+                }             
+                
+            }
+
+            if (isLastPage === false) {
+                _sync()
+                return
+            }
+            else if (isLastPage === true) {
+
+                if (handlers["NewSynthAsset"]) {
+                  
+                    await Sync.findOneAndUpdate({}, { lastBlockTimestamp: lastTxnTimestamp })
+                    _syncAndListen({ contractAddress, abi, handlers });
+                    return
+                }
+                return
+            }
+
+           
+
+
+        }
+        catch (error) {
+            if (handlers["NewSynthAsset"]) {
+    
+                await Sync.findOneAndUpdate({}, { lastBlockTimestamp: lastTxnTimestamp })
+                _syncAndListen({ contractAddress, abi, handlers });
+                return
+            }
+        }
+    }
+}
+
+
+// _syncAndListen(SystemConfig);
+
+
+module.exports = { syncAndListen, _syncAndListen }
 
 // 99993100000
