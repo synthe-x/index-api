@@ -39,9 +39,11 @@ const Sync = mongoose.model("Sync", SyncSchema)
 const PoolSynth = mongoose.model("PoolSynth", poolSynthSchema)
 const TradingVolume = mongoose.model("TradingVolume", TradingVolumeSchema)
 
+require("dotenv").config();
 
 async function connect() {
-    mongoose.connect("mongodb+srv://g-2-project-1:MvD9HwLH72zL105K@cluster0.j1yrl.mongodb.net/chainscore-api-index?retryWrites=true&w=majority", {
+    console.log(process.env.MONGO_URL);
+    mongoose.connect(process.env.MONGO_URL, {
     useNewUrlParser: true
 }) .then(() => console.log("MongoDb is connected"))
 .catch(err => console.log(err))
