@@ -1,4 +1,4 @@
-const { Collateral, Synth, System, Sync } = require("../db");
+const { Collateral, Synth, System, Sync, PoolSynth } = require("../db");
 
 
 
@@ -14,12 +14,42 @@ async function getAllCollateral(req, res){
    
 };
 
-async function getAllSynth(req, res){
+async function _getAllSynth(req, res){
 
     try{
         const all_synth = await Synth.find().select({oracle:0, accrualTimestamp:0, debtTracker_id:0, _id:0, __v : 0, liquidity : 0, createdAt : 0, updatedAt : 0 }).lean();
     
         return res.status(200).send({status: true, data : all_synth});
+    }
+    catch(error){
+        console.log("Error @ getAllSynth", error)
+        return res.status(500).send({ msg: error.message, status: false });
+    }
+    
+};
+async function getAllSynth(req, res){
+
+    try{
+        const all_synth = await Synth.find().select({oracle:0, accrualTimestamp:0, debtTracker_id:0, _id:0, __v : 0, liquidity : 0, createdAt : 0, updatedAt : 0 }).lean();;
+
+        let data = [];
+        for(let i in all_synth){
+
+            let balance = Number(all_synth[i].totalBorrowed);
+
+            let poolSynth = await PoolSynth.find({synth_id : all_synth[i].synth_id});
+
+            for (let j in poolSynth){
+                balance += Number(poolSynth[j].balance);
+            }
+
+            all_synth[i].liquidity = balance;
+            data.push(all_synth[i])
+
+
+        }
+    
+        return res.status(200).send({status: true, data : data});
     }
     catch(error){
         console.log("Error @ getAllSynth", error)
