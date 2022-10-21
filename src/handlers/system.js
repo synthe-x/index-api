@@ -90,7 +90,7 @@ async function handleExchange(decodedData, arguments) {
            await handleExchangeTrading(decodedData, arguments)
             return;
         }
-        parseAccureInterest(arguments.txn_id);
+       await  parseAccureInterest(arguments.txn_id);
         let dstOracle = tronWeb.contract(getABI("SynthERC20"), dst);
         let srcOracle = tronWeb.contract(getABI("SynthERC20"), src);
         let promise = await Promise.all([dstOracle, srcOracle]);
@@ -107,6 +107,20 @@ async function handleExchange(decodedData, arguments) {
         arguments.dst = dst;
         arguments.dst_amount = dst_amount;
         Exchange.create(arguments);
+
+        let srcSynth = await Synth.findOne({synth_id : src});
+
+        let srcTotalBorrow = Number(srcSynth.totalBorrowed) - Number(src_amount);
+
+        await Synth.findOneAndUpdate({ synth_id: src }, { $set: { totalBorrowed: srcTotalBorrow } });
+
+        let dstSynth = await Synth.findOne({synth_id : dst});
+
+        let dstTotalBorrow = Number(dstSynth.totalBorrowed) + Number(dst_amount);
+
+        await Synth.findOneAndUpdate({ synth_id: dst }, { $set: { totalBorrowed: dstTotalBorrow } });
+
+
         console.log("Reseve Exchange",)
 
     }
@@ -157,7 +171,7 @@ async function handleBorrow(decodedData, arguments) {
 
         }
 
-        parseAccureInterest(arguments.txn_id);
+       let accur =  parseAccureInterest(arguments.txn_id);
 
         let borrow = Borrow.create(arguments);
 
@@ -169,7 +183,9 @@ async function handleBorrow(decodedData, arguments) {
 
         let isUserSynthExist = UserDebt.findOne({ user_id: account, synth_id: asset }).lean();
 
-        let promise = await Promise.all([borrow, synth, isUserExist, isUserSynthExist]);
+       
+
+        let promise = await Promise.all([borrow, synth, isUserExist, isUserSynthExist, accur]);
         borrow = promise[0];
         synth = promise[1];
         isUserExist = promise[2];
@@ -180,8 +196,9 @@ async function handleBorrow(decodedData, arguments) {
             return
         };
 
-        let liquidity = Number(synth.liquidity) + Number(amount);
-        await Synth.findByIdAndUpdate({ _id: synth._id }, { $set: { liquidity: liquidity } })
+        let totalBorrowed = Number(synth.totalBorrowed) + Number(amount);
+       
+        await Synth.findOneAndUpdate({ synth_id: asset }, { $set: { totalBorrowed: totalBorrowed } })
 
         const getAssetDetails = await tronWeb.contract(getABI("DebtTracker"), synth.debtTracker_id);
         let interestRate = await getAssetDetails['get_interest_rate']().call();
@@ -287,7 +304,7 @@ async function handleRepay(decodedData, arguments) {
         }
 
         
-        parseAccureInterest(arguments.txn_id);
+      let = await  parseAccureInterest(arguments.txn_id);
         const repay = await Repay.create(arguments);
 
         // get borrowIndex rate from Synth
@@ -297,8 +314,8 @@ async function handleRepay(decodedData, arguments) {
             return ("synth not found", synth)
         };
 
-        let liquidity = Number(synth.liquidity) - Number(amount);
-        await Synth.findByIdAndUpdate({ _id: synth._id }, { $set: { liquidity: liquidity } })
+        let totalBorrowed = Number(synth.totalBorrowed) - Number(amount);
+        await Synth.findOneAndUpdate({ synth_id: asset }, { $set: { totalBorrowed: totalBorrowed } })
 
         const getAssetDetails = await tronWeb.contract(getABI("DebtTracker"), synth.debtTracker_id);
         let interestRate = await getAssetDetails['get_interest_rate']().call();

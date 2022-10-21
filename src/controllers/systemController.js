@@ -1,4 +1,4 @@
-const { Collateral, Synth } = require("../db");
+const { Collateral, Synth, System } = require("../db");
 
 
 
@@ -17,7 +17,7 @@ async function getAllCollateral(req, res){
 async function getAllSynth(req, res){
 
     try{
-        const all_synth = await Synth.find().select({oracle:0, accrualTimestamp:0, debtTracker_id:0, _id:0 }).lean();
+        const all_synth = await Synth.find().select({oracle:0, accrualTimestamp:0, debtTracker_id:0, _id:0, __v : 0, liquidity : 0, createdAt : 0, updatedAt : 0 }).lean();
     
         return res.status(200).send({status: true, data : all_synth});
     }
@@ -26,7 +26,27 @@ async function getAllSynth(req, res){
         return res.status(500).send({ msg: error.message, status: false });
     }
     
+};
+
+async function getSystemInfo(req, res){
+    try{
+        let systemInfo = await System.findOne().lean();
+
+        if(!systemInfo){
+            systemInfo = {
+                minCollateralRatio : '130',
+                safeCollateralRatio : '200'
+
+            }
+        }
+    
+        return res.status(200).send({status: true, data : systemInfo});
+    }
+    catch(error){
+        console.log("Error @ getSystemInfo", error)
+        return res.status(500).send({ msg: error.message, status: false });
+    }
 }
 
 
-module.exports = {getAllCollateral, getAllSynth}
+module.exports = {getAllCollateral, getAllSynth, getSystemInfo}

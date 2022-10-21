@@ -101,7 +101,7 @@ async function parseAccureInterest(txn_id) {
                 if (decoded_data && decoded_data.args != undefined) {
 
                     if (decoded_data.name == "AccureInterest") {
-                        handleAccureInterest(decoded_data, arguments)
+                       await handleAccureInterest(decoded_data, arguments)
                     }
                 }
 
