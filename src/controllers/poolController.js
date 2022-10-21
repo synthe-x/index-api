@@ -21,7 +21,7 @@ const getPoolDetailsById = async function (req, res) {
 
 
 
-const getAllPoolDetails = async function (req, res) {
+const _getAllPoolDetails = async function (req, res) {
 
     try {
         let getAllPool = await TradingPool.find().select({ pool_id: 1, pool_address: 1, name: 1, symbol: 1, poolSynth_ids: 1, _id: 0 }).lean();
@@ -37,6 +37,49 @@ const getAllPoolDetails = async function (req, res) {
                 let synthDetails = await Synth.findOne({ synth_id: poolSynth.synth_id }).select({ name: 1, symbol: 1, price: 1, _id: 0 }).lean()
                 pool_synthBalance.push({ ...poolSynth, ...synthDetails });
             }
+            getAllPool[i].poolSynth_ids = pool_synthBalance;
+
+        }
+        return res.status(200).send({ status: true, data: getAllPool });
+    }
+    catch (error) {
+        console.log("Error @ getPoolDetailsById", error)
+        return res.status(500).send({ msg: error.message, status: false });
+    }
+};
+const getAllPoolDetails = async function (req, res) {
+
+    try {
+        let getAllPool = await TradingPool.find().select({ pool_id: 1, pool_address: 1, name: 1, symbol: 1, poolSynth_ids: 1, _id: 0 }).lean();
+
+        for (let i in getAllPool) {
+
+            let synthIds = getAllPool[i].poolSynth_ids;
+
+            let pool_synthBalance = [];
+            let poolPromise = [];
+
+            for (let j in synthIds) {
+
+                let poolSynth =  PoolSynth.findById({ _id: synthIds[j] }).select({ synth_id: 1, balance: 1, _id: 0 }).lean();
+                poolPromise.push(poolSynth)
+               
+            };
+            poolPromise = await Promise.all(poolPromise);
+
+            let synthDetailsPromise = []
+            for(let j in synthIds){
+
+                let synthDetails = await Synth.findOne({ synth_id: poolPromise[j].synth_id }).select({ name: 1, symbol: 1, price: 1, _id: 0 }).lean();
+                synthDetailsPromise.push(synthDetails);            
+            };
+             
+            synthDetailsPromise = await Promise.all(synthDetailsPromise);
+
+            for(let j in synthIds){
+                pool_synthBalance.push({ ... poolPromise[j], ...synthDetailsPromise[j] })
+            }
+
             getAllPool[i].poolSynth_ids = pool_synthBalance;
 
         }
