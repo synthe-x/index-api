@@ -1,4 +1,4 @@
-const { TradingPool, PoolEntered, PoolExited, UserTrading, Exchange, User, PoolSynth, TradingVolume } = require("../db");
+const { TradingPool, PoolEntered, PoolExited, UserTrading, Exchange, User, PoolSynth, TradingVolume, Synth } = require("../db");
 const { tronWeb, getABI } = require("../utils");
 
 async function handleNewTradingPool(decodedData, arguments) {
@@ -73,6 +73,12 @@ async function handlePoolEntered(decodedData, arguments) {
         arguments.amount = amount;
 
         await PoolEntered.create(arguments);
+
+        let synth = await Synth.findOne({ synth_id: asset_id }).lean();
+
+        let totalBorrowed = Number(synth.totalBorrowed) + Number(amount);
+       
+        await Synth.findOneAndUpdate({ synth_id: asset_id }, { $set: { totalBorrowed: totalBorrowed } })
 
         // update pool synth
         let poolSynth = await PoolSynth.findOne({ pool_address: pool_address, synth_id: asset_id }).lean();
@@ -153,7 +159,12 @@ async function handlePoolExited(decodedData, arguments) {
         arguments.amount = amount;
 
         PoolExited.create(arguments);
-        
+
+        const synth = await Synth.findOne({ synth_id: asset_id }).lean();
+
+        let totalBorrowed = Number(synth.totalBorrowed) - Number(amount);
+
+        await Synth.findOneAndUpdate({ synth_id: asset_id }, { $set: { totalBorrowed: totalBorrowed } })
 
         let poolSynth = await PoolSynth.findOne({ pool_address: pool_address, synth_id: asset_id }).lean();
         let currentBalance = Number(poolSynth.balance) - Number(amount)
@@ -218,6 +229,18 @@ async function handleExchangeTrading(decodedData, arguments) {
         arguments.dst = dst;
         arguments.dst_amount = dst_amount;
         Exchange.create(arguments);
+
+        const synth = await Synth.findOne({ synth_id: src }).lean();
+
+        let totalBorrowed = Number(synth.totalBorrowed) - Number(src_amount);
+        
+        await Synth.findOneAndUpdate({ synth_id: src }, { $set: { totalBorrowed: totalBorrowed } });
+
+        let synthDst = await Synth.findOne({ synth_id: dst }).lean();
+
+        let totalBorrowedDst = Number(synthDst.totalBorrowed) + Number(dst_amount);
+       
+        await Synth.findOneAndUpdate({ synth_id: dst }, { $set: { totalBorrowed: totalBorrowedDst } })
 
         // update poolSynth
         let findUserTrading = await TradingPool.findOne({ pool_id : pool_id });
