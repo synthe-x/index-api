@@ -35,7 +35,7 @@ const _getAllPoolDetails = async function (req, res) {
 
                 let poolSynth = await PoolSynth.findById({ _id: synthIds[j] }).select({ synth_id: 1, balance: 1, _id: 0 }).lean();
                 let synthDetails = await Synth.findOne({ synth_id: poolSynth.synth_id }).select({ name: 1, symbol: 1, price: 1, _id: 0 }).lean()
-                pool_synthBalance.push({ ...poolSynth, ...synthDetails });
+                pool_synthBalance.push({ ...poolSynth, synth_id: synthDetails });
             }
             getAllPool[i].poolSynth_ids = pool_synthBalance;
 
@@ -77,7 +77,7 @@ const getAllPoolDetails = async function (req, res) {
             synthDetailsPromise = await Promise.all(synthDetailsPromise);
 
             for(let j in synthIds){
-                pool_synthBalance.push({ ... poolPromise[j], ...synthDetailsPromise[j] })
+                pool_synthBalance.push({ ... poolPromise[j], synth_id: synthDetailsPromise[j] })
             }
 
             getAllPool[i].poolSynth_ids = pool_synthBalance;

@@ -42,7 +42,6 @@ const TradingVolume = mongoose.model("TradingVolume", TradingVolumeSchema)
 require("dotenv").config();
 
 async function connect() {
-    console.log(process.env.MONGO_URL);
     mongoose.connect(process.env.MONGO_URL, {
     useNewUrlParser: true
 }) .then(() => console.log("MongoDb is connected"))
