@@ -130,7 +130,7 @@ async function getPoolDetOfUserById(req, res) {
         if (pool_id == "0") {
 
             const userDetails = await User.findOne({ user_id: user_id }).lean();
-            if(!userDetails){
+            if (!userDetails) {
                 return res.status(404).send({ status: false, error: "User not found" })
             }
 
@@ -189,13 +189,13 @@ async function getPoolDetOfUserById(req, res) {
 
         const getPoolDetailsOfUser = await UserTrading.findOne({ user_id: user_id, pool_id: pool_id }).select({ createdAt: 0, updatedAt: 0, __v: 0, _id: 0, pool_id: 0, txn_id: 0, block_number: 0, block_timestamp: 0 }).lean();
 
-        if(!getPoolDetailsOfUser){
-            return res.status(404).send({ status : false, error: "User trading not found in this pool" });
+        if (!getPoolDetailsOfUser) {
+            return res.status(404).send({ status: false, error: "User trading not found in this pool" });
         }
 
         const getPoolDetials = await TradingPool.findOne({ pool_id: pool_id }).select({ createdAt: 0, updatedAt: 0, __v: 0, _id: 0, txn_id: 0, block_number: 0, block_timestamp: 0 }).lean();
 
-        if(!getPoolDetials){
+        if (!getPoolDetials) {
             return res.status(404).send({ msg: error.message, error: "Pool not found" });
         }
         getPoolDetailsOfUser.pool = getPoolDetials;
@@ -220,7 +220,7 @@ async function getUserCollateral(req, res) {
         const userDetails = await User.findOne({ user_id: user_id }).lean();
 
         if (!userDetails) {
-            return res.status(404).send({ status: false, error : "User Not Found " });
+            return res.status(404).send({ status: false, error: "User Not Found " });
         }
 
         // User Collateral
@@ -372,16 +372,16 @@ async function getUserAll(req, res) {
         let totalCollateralBalance = 0;
         let col_promise = [];
         for (let i in userCollaterals) {
-           
+
             let Oracle = await tronWeb.contract(getABI("CollateralERC20"), userCollaterals[i].cAsset);
             let col_price = Oracle['get_price']().call();
             col_promise.push(col_price);
         };
 
         let promiseCol = await Promise.all(col_promise);
-       
-        for(let i in userCollaterals){
-            let balance = (Number(userCollaterals[i].balance) / 10 ** Number(userCollaterals[i].decimal)) * (Number(promiseCol[i]) / 10**8);
+
+        for (let i in userCollaterals) {
+            let balance = (Number(userCollaterals[i].balance) / 10 ** Number(userCollaterals[i].decimal)) * (Number(promiseCol[i]) / 10 ** 8);
             totalCollateralBalance += balance
         }
 
@@ -392,38 +392,38 @@ async function getUserAll(req, res) {
         let promise_userDebt = [];
 
         let promise_synth = [];
-        for(let i in userDebts){
-            let synth =  Synth.findOne({ synth_id: userDebts[i].synth_id }).lean();
+        for (let i in userDebts) {
+            let synth = Synth.findOne({ synth_id: userDebts[i].synth_id }).lean();
             promise_synth.push(synth);
         }
 
         const promiseSynth = await Promise.all(promise_synth);
 
         let promise_assetOracle = [];
-        for(let i in userDebts){
-            const getAssetDetails =  tronWeb.contract(getABI("DebtTracker"),promiseSynth[i].debtTracker_id);
-            const priceOracle =  tronWeb.contract().at(promiseSynth[i].oracle);
+        for (let i in userDebts) {
+            const getAssetDetails = tronWeb.contract(getABI("DebtTracker"), promiseSynth[i].debtTracker_id);
+            const priceOracle = tronWeb.contract().at(promiseSynth[i].oracle);
             promise_assetOracle.push(getAssetDetails, priceOracle);
         }
 
         let promiseAssetOracle = await Promise.all(promise_assetOracle)
 
         for (let i in userDebts) {
-           
-            let interestRate =  promiseAssetOracle[2 * i]['get_interest_rate']().call();
-            let price = ( promiseAssetOracle[2 * i + 1]['latestAnswer']().call());
-                          
+
+            let interestRate = promiseAssetOracle[2 * i]['get_interest_rate']().call();
+            let price = (promiseAssetOracle[2 * i + 1]['latestAnswer']().call());
+
             promise_userDebt.push(price, interestRate)
-           
+
         };
 
         const promiseUserDebt = await Promise.all(promise_userDebt);
-        
-        for(let i in userDebts){
-            let price = Number(promiseUserDebt[2 * i]) / 10**8;
+
+        for (let i in userDebts) {
+            let price = Number(promiseUserDebt[2 * i]) / 10 ** 8;
             let interestRate = promiseUserDebt[2 * i + 1];
             const yearlyInterestRate = ((Number(interestRate._hex) / 10 ** 18) + 1) ** (365 * 24 * 3600) - 1;
-        
+
             let currentPrincipal = (Number(userDebts[i].principal) / 10 ** 18) * (promiseSynth[i].borrowIndex / userDebts[i].interestIndex) * price;
 
             yearly_interest_amount += yearlyInterestRate * currentPrincipal;
@@ -474,10 +474,10 @@ async function _userWalletBalances(req, res) {
         let collateral = await Collateral.find().lean();
         let synth = await Synth.find().lean();
 
-        
+
         let collaterals = []
         for (let i in collateral) {
-           
+
             let Oracle = await tronWeb.contract(getABI("CollateralERC20"), collateral[i].coll_address);
             let user_balance = (Oracle['balanceOf'](user_id).call());
             let userColl = UserCollateral.findOne({ collateral: collateral[i].coll_address, user_id: user_id });
@@ -572,7 +572,7 @@ async function userWalletBalances(req, res) {
         for (let i in collateral) {
 
             let userColl = UserCollateral.findOne({ collateral: collateral[i].coll_address, user_id: user_id });
-            col_promise.push(userColl) 
+            col_promise.push(userColl)
         };
 
         let synths = [];
@@ -584,7 +584,7 @@ async function userWalletBalances(req, res) {
             synth_promise.push(userDebt)
 
         };
-        
+
         let promiseCol = await Promise.all(col_promise);
 
         for (let i in collateral) {
@@ -594,10 +594,10 @@ async function userWalletBalances(req, res) {
             if (userColl) {
                 amount = `${userColl.balance}`;
             } else {
-                amount = `0`; 
+                amount = `0`;
 
             }
-    
+
             let _colateral = {
                 name: collateral[i].name,
                 symbol: collateral[i].symbol,
@@ -606,20 +606,20 @@ async function userWalletBalances(req, res) {
                 amount: amount,
                 id: collateral[i].coll_address,
                 minCollateral: `${collateral[i].minCollateral}`,
-                liquidity : collateral[i].liquidity
+                liquidity: collateral[i].liquidity
             }
             collaterals.push(_colateral)
         }
 
-        
-       
-        let promiseSynth = await Promise.all(synth_promise);
-     
-        for(let i in synth){
 
-           let userDebt = promiseSynth[i];
+
+        let promiseSynth = await Promise.all(synth_promise);
+
+        for (let i in synth) {
+
+            let userDebt = promiseSynth[i];
             let amount;
-            if (userDebt) {               
+            if (userDebt) {
                 amount = `${userDebt.principal}`;
             } else {
                 amount = `0`;
@@ -632,13 +632,13 @@ async function userWalletBalances(req, res) {
                 decimal: synth[i].decimal,
                 id: synth[i].synth_id,
                 apy: synth[i].apy,
-                amount : amount,
-                liquidity : synth[i].totalBorrowed
+                amount: amount,
+                liquidity: synth[i].totalBorrowed
             }
-            
+
             synths.push(_synth)
         }
-        
+
 
         let data = {
             collaterals: collaterals,
@@ -651,7 +651,79 @@ async function userWalletBalances(req, res) {
         console.log("Error @ userWalletBalances", error)
         return res.status(500).send({ msg: error.message, status: false });
     }
+};
+
+
+async function getUserDepositWithrawDetails(req, res) {
+    try {
+
+
+        let userId = req.params.userId ;
+
+        let getCollaterals = await Collateral.find().select({ coll_address: 1, _id: 0 }).lean();
+
+        let deposits = {};
+        let withdraws = {};
+        for (let i in getCollaterals) {
+
+            let getUserDeposits = await Deposit.find({ account: userId, asset: getCollaterals[i].coll_address }).sort({ block_timestamp: 1 }).select({ block_timestamp: 1, amount: 1, _id: 0 }).lean();
+
+            let getUserWithdraws = await Withdraw.find({ account: userId, asset: getCollaterals[i].coll_address }).sort({ block_timestamp: 1 }).select({ block_timestamp: 1, amount: 1, _id: 0 }).lean();
+
+            let updatedWithdraws = []
+            for (let i in getUserWithdraws) {
+
+
+                updatedWithdraws.push({
+                    block_timestamp: getUserWithdraws[i].block_timestamp,
+                    amount: -getUserWithdraws[i].amount
+                })
+
+            }
+
+            deposits[`${getCollaterals[i].coll_address}`] = getUserDeposits;
+            withdraws[`${getCollaterals[i].coll_address}`] = updatedWithdraws;
+        }
+
+        let data = []
+        for (let i in getCollaterals) {
+
+            let merge = [...deposits[`${getCollaterals[i].coll_address}`], ...withdraws[`${getCollaterals[i].coll_address}`]];
+
+            merge = merge.sort((a, b) => a.block_timestamp - b.block_timestamp);
+
+            let result = [];
+            let currAmount = 0;
+
+            for (let i in merge) {
+
+                currAmount += Number(merge[i].amount);
+                result.push({
+                    block_timestamp: merge[i].block_timestamp,
+                    amount: currAmount
+                })
+            };
+
+            data.push(
+                {
+                    collateralAddress: `${getCollaterals[i].coll_address}`,
+                    records: result
+                }
+            )
+
+        }
+
+        return res.status(200).send({ status: true, data: data })
+
+
+    }
+    catch (error) {
+        console.log("Error @ getUserDepositWithrawDetails", error)
+        return res.status(500).send({ msg: error.message, status: false });
+    }
 }
 
 
-module.exports = {  getPoolDetOfUserById, getUserCollateral, getUserAll, userWalletBalances }
+
+
+module.exports = { getPoolDetOfUserById, getUserCollateral, getUserAll, userWalletBalances, getUserDepositWithrawDetails }

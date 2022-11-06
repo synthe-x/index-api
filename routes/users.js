@@ -1,7 +1,7 @@
 var express = require('express');
 const { getPoolDetailsById, getAllPoolDetails, getUserPoolDetails, getPoolVolumes } = require('../src/controllers/poolController');
 const { getAllCollateral, getAllSynth, getSystemInfo } = require('../src/controllers/systemController');
-const { getPoolDetOfUserById, getUserCollateral, getUserAll, userWalletBalances } = require('../src/controllers/userController');
+const { getPoolDetOfUserById, getUserCollateral, getUserAll, userWalletBalances, getUserDepositWithrawDetails } = require('../src/controllers/userController');
 const { SystemConfig } = require('../src/sync/configs/system');
 const { syncAndListen } = require('../src/sync/sync');
 var router = express.Router();
@@ -23,7 +23,8 @@ router.get('/assets/synths', getAllSynth);
 
 // router.get('/user/:user_id/all',getUserAll);
 
-router.get('/system', getSystemInfo)
+router.get('/system', getSystemInfo);
+router.get('/user/deposits/withdraws/history/:userId', getUserDepositWithrawDetails)
 
 
 

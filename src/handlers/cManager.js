@@ -15,15 +15,16 @@ async function _handleNewCollateralAsset(decodedData, arguments) {
 
 
 };
-async function handleNewCollateralAsset(decodedData, arguments) {
-    // get synth from db
 
+
+async function handleNewCollateralAsset(decodedData, arguments) {
+   
     try {
        
         const asset_address = tronWeb.address.fromHex(decodedData.args[0]);
         const isCollExist = await Collateral.findOne({ coll_address: asset_address }).lean();
         if (isCollExist) {
-            // console.log("Asset already exist");
+            console.log("Asset already exist",asset_address);
             return
         }
 
@@ -68,7 +69,7 @@ async function handleNewCollateralAsset(decodedData, arguments) {
 
     }
     catch (error) {
-        console.log("Error", error.message, error);
+        console.log("Error @ handleNewCollateralAsset", error.message, error);
     }
 };
 

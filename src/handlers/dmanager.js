@@ -30,32 +30,30 @@ async function handleNewSynthAsset(decodedData, arguments) {
         const asset_address = tronWeb.address.fromHex(decodedData.args[0]);
 
         let synth = decodedData.args[0];
-        
+
         const isSynthExist = await Synth.findOne({ synth_id: asset_address }).lean();
         if (isSynthExist) {
-            // console.log("Synth already exist");
+            console.log("Synth already exist", asset_address);
             return
         }
 
         let dManager = await getContract("DebtManager");
-        let debtTracker = tronWeb.address.fromHex(await dManager.methods.assetToDAsset(synth).call()) ;
+        let debtTracker = tronWeb.address.fromHex(await dManager.methods.assetToDAsset(synth).call());
         syncAndListen(SynthConfig(tronWeb.address.fromHex(synth)));
-        // syncAndListen(DebtTrackerConfig(debtTracker));
-        // syncAndListen(DebtTrackerThruSystemConfig());
 
-        const getSynthDetails = await tronWeb.contract(getABI("DebtTracker"),debtTracker);
+        const getSynthDetails = await tronWeb.contract(getABI("DebtTracker"), debtTracker);
         let interestRate = await getSynthDetails['get_interest_rate']().call();
-    
-        const apy = ((Number(interestRate._hex) / 10 ** 18) + 1) ** (365 * 24 * 3600) - 1 ;
+
+        const apy = ((Number(interestRate._hex) / 10 ** 18) + 1) ** (365 * 24 * 3600) - 1;
 
         const getAssetDetails = await tronWeb.contract(getABI("SynthERC20"), asset_address);
-        let name =  getAssetDetails['name']().call();
-        let symbol =  getAssetDetails['symbol']().call();
-        let decimal =  getAssetDetails['decimals']().call();
-        
+        let name = getAssetDetails['name']().call();
+        let symbol = getAssetDetails['symbol']().call();
+        let decimal = getAssetDetails['decimals']().call();
+
         let oracle = tronWeb.address.fromHex(decodedData.args[1]);
-        let interestRateModel =`${decodedData.args[2]}`;
-        let priceOracle =  tronWeb.contract().at(oracle);
+        let interestRateModel = `${decodedData.args[2]}`;
+        let priceOracle = tronWeb.contract().at(oracle);
 
         let promise = await Promise.all([name, symbol, decimal, priceOracle]);
         name = promise[0];
@@ -72,13 +70,13 @@ async function handleNewSynthAsset(decodedData, arguments) {
             oracle: oracle,
             interestRateModel: interestRateModel,
             borrowIndex: `${10 ** 18}`,
-            debtTracker_id : debtTracker,
-            decimal : decimal,
-            apy : apy,
-            liquidity : '0',
-            totalBorrowed : '0'
+            debtTracker_id: debtTracker,
+            decimal: decimal,
+            apy: apy,
+            liquidity: '0',
+            totalBorrowed: '0'
         }
-         Synth.create(temp);
+        Synth.create(temp);
         console.log("New Synth added", asset_address)
     }
     catch (error) {
