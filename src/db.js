@@ -49,13 +49,5 @@ async function connect() {
 
 }
 
-// async function connect() {
-//     mongoose.connect("mongodb://root:password@localhost:27017/?authMechanism=DEFAULT", {
-//         useNewUrlParser: true
-//     }).then(() => console.log("MongoDb is connected"))
-//         .catch(err => console.log(err))
-
-// }
-
 
 module.exports = { System, User, UserDebt, UserCollateral, Collateral, Synth, UserTrading, TradingPool, connect, Deposit, Borrow, Repay, Withdraw, Exchange, PoolEntered, PoolExited, Sync, PoolSynth, TradingVolume}

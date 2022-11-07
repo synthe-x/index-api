@@ -6,12 +6,4 @@ const { getAllCollateral, getAllSynth } = require("./controllers/systemControlle
 
 
 
-// async function run(){
-//     await connect();
-//     syncAndListen(SystemConfig);
-//     console.log("SYnc Start")
-// }
-// run();
-
-
 module.exports = {run};

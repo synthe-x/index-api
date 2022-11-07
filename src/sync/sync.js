@@ -87,18 +87,11 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
 
     let req_url = `https://nile.trongrid.io/v1/contracts/${contractAddress}/transactions?order_by=block_timestamp,asc&limit=50&only_confirmed=false&min_block_timestamp=${lastTxnTimestamp}`;
     let isLastPage;;
-   
+
     sync();
 
     async function sync() {
         try {
-            // const isContractExist = await allEvent.findOne({con_add:contractAddress}).sort({"updatedAt":-1}).limit(1);
-
-            // if(isContractExist && isContractExist.req_url != ""){
-            //     req_url = isContractExist.req_url;
-            // }
-
-           
 
             let resp = await axios.get(req_url);
 
@@ -108,8 +101,6 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
             } else {
                 isLastPage = true;
             }
-
-           
 
             let data = resp.data.data
             const iface = new ethers.utils.Interface(abi);
@@ -125,7 +116,6 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
                     if (txn_id) {
                         resp_1 = await axios.get(`https://nile.trongrid.io/wallet/gettransactioninfobyid?value=${txn_id}`);
                         encoded_data = resp_1.data.log;
-
 
                     }
 
@@ -151,9 +141,8 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
                             }
 
                             const decoded_data = await decode_log_data(data_from_log, modified_topics, iface);
-                           
+
                             if (decoded_data && decoded_data.args != undefined) {
-                               
                                 // console.log("Event", decoded_data.name, decoded_data.args) 
                                 if (handlers[decoded_data["name"]]) {
                                     handlers[decoded_data["name"]](decoded_data, arguments)
@@ -172,7 +161,7 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
             else if (isLastPage === true) {
 
                 if (handlers["NewSynthAsset"]) {
-                  
+
                     await Sync.findOneAndUpdate({}, { lastBlockTimestamp: lastTxnTimestamp })
                     syncAndListen({ contractAddress, abi, handlers });
                     return
@@ -184,7 +173,7 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
         }
         catch (error) {
             if (handlers["NewSynthAsset"]) {
-    
+
                 await Sync.findOneAndUpdate({}, { lastBlockTimestamp: lastTxnTimestamp })
                 syncAndListen({ contractAddress, abi, handlers });
                 return
@@ -196,7 +185,7 @@ async function syncAndListen({ contractAddress, abi, handlers }) {
 let lastTxnTimestamp;
 let lastBlockNumber;
 async function _syncAndListen({ contractAddress, abi, handlers }) {
-   
+
     let syncDetails = await Sync.findOne();
 
     if (!syncDetails) {
@@ -209,17 +198,14 @@ async function _syncAndListen({ contractAddress, abi, handlers }) {
 
     let req_url = `https://nile.trongrid.io/v1/contracts/${contractAddress}/events?order_by=block_timestamp,asc&limit=50&only_confirmed=false&min_block_timestamp=${lastTxnTimestamp}`;
     let isLastPage;
-   
-
 
     _sync();
 
     async function _sync() {
         try {
-            
 
             let resp = await axios.get(req_url);
-            
+
             if (resp.data.meta.links) {
                 req_url = resp.data.meta.links.next
                 isLastPage = false
@@ -228,11 +214,11 @@ async function _syncAndListen({ contractAddress, abi, handlers }) {
             }
 
             let data = resp.data.data
-           
 
-            if ( data) {
 
-                for(let i in data){
+            if (data) {
+
+                for (let i in data) {
 
                     let res = data[i].result;
                     let arr = Object.keys(res);
@@ -241,27 +227,27 @@ async function _syncAndListen({ contractAddress, abi, handlers }) {
                     for (let i = 0; i < len / 2; i++) {
                         args.push(res[`${arr[i]}`])
                     };
-                   
+
                     data[i].args = args;
-                    
+
                     let arguments = {
                         txn_id: data[i].transaction_id,
                         block_timestamp: data[i].block_timestamp,
                         block_number: data[i].block_number,
                         index: data[i].event_index,
-                        address : data[i].contract_address,
-                        from : 0
-                        
+                        address: data[i].contract_address,
+                        from: 0
+
                     }
-                    lastTxnTimestamp =  data[i].block_timestamp;
+                    lastTxnTimestamp = data[i].block_timestamp;
                     lastBlockNumber = data[i].block_number
-                    // console.log(arguments)
+
                     if (handlers[data[i]["event_name"]] && data[i].result != undefined) {
-                       await handlers[data[i]["event_name"]](data[i], arguments)
+                        await handlers[data[i]["event_name"]](data[i], arguments)
                     }
 
-                }             
-                
+                }
+
             }
 
             if (isLastPage === false) {
@@ -271,22 +257,19 @@ async function _syncAndListen({ contractAddress, abi, handlers }) {
             else if (isLastPage === true) {
 
                 if (handlers["NewSynthAsset"]) {
-                  
-                    await Sync.findOneAndUpdate({}, {$set: {lastBlockTimestamp: lastTxnTimestamp , blockNumber: lastBlockNumber} })
+
+                    await Sync.findOneAndUpdate({}, { $set: { lastBlockTimestamp: lastTxnTimestamp, blockNumber: lastBlockNumber } })
                     _syncAndListen({ contractAddress, abi, handlers });
                     return
                 }
                 return
             }
 
-           
-
-
         }
         catch (error) {
             if (handlers["NewSynthAsset"]) {
-    
-                await Sync.findOneAndUpdate({}, {$set: {lastBlockTimestamp: lastTxnTimestamp , blockNumber: lastBlockNumber} })
+
+                await Sync.findOneAndUpdate({}, { $set: { lastBlockTimestamp: lastTxnTimestamp, blockNumber: lastBlockNumber } })
                 _syncAndListen({ contractAddress, abi, handlers });
                 return
             }
@@ -295,9 +278,8 @@ async function _syncAndListen({ contractAddress, abi, handlers }) {
 }
 
 
-// _syncAndListen(SystemConfig);
+
 
 
 module.exports = { syncAndListen, _syncAndListen }
 
-// 99993100000

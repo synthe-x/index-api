@@ -673,7 +673,6 @@ async function getUserDepositWithrawDetails(req, res) {
             let updatedWithdraws = []
             for (let i in getUserWithdraws) {
 
-
                 updatedWithdraws.push({
                     block_timestamp: getUserWithdraws[i].block_timestamp,
                     amount: -getUserWithdraws[i].amount

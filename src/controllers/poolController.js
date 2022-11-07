@@ -184,7 +184,6 @@ const getPoolVolumes = async function (req, res) {
                 }
             }
            
-
             data.push(obj)
         }
 
