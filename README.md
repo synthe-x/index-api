@@ -144,7 +144,7 @@ Url : http://localhost:3030/assets/collaterals
 }
 ```
 
-### 4. For fetching all sythetic assets details
+### 4. For fetching all synthetic assets details
 
 ### Route /assets/synths
 
