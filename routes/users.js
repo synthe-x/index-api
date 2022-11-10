@@ -24,7 +24,7 @@ router.get('/assets/synths', getAllSynth);
 // router.get('/user/:user_id/all',getUserAll);
 
 router.get('/system', getSystemInfo);
-router.get('/user/deposits/withdraws/history/:userId', getUserDepositWithrawDetails)
+// router.get('/user/deposits/withdraws/history/:userId', getUserDepositWithrawDetails)
 
 
 
