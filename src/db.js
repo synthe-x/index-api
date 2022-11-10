@@ -40,7 +40,7 @@ const PoolSynth = mongoose.model("PoolSynth", poolSynthSchema)
 const TradingVolume = mongoose.model("TradingVolume", TradingVolumeSchema)
 
 require("dotenv").config();
-
+console.log(process.env.MONGO_URL)
 async function connect() {
     mongoose.connect(process.env.MONGO_URL, {
     useNewUrlParser: true
