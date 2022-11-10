@@ -2,7 +2,7 @@
 
 ## Backend APIS
 
-### 1. For fetching volumes of pool by its id
+### 1. For Fetching Volumes Of Pool By Its id
 
 ### Route /pool/volume/:pool_id
 
@@ -37,7 +37,7 @@ where pool_id can be 0 to 5 only
 }
 ```
 
-### 2. For fetching all pools details
+### 2. For Fetching All Pools Details
 
 ### Route /pool/all
 
@@ -104,7 +104,7 @@ Url : http://localhost:3030/pool/all
     ]
 }
 ```
-### 3. For fetching all collaterals details
+### 3. For Fetching All Collaterals Details
 
 ### Route /assets/collaterals
 
@@ -144,7 +144,7 @@ Url : http://localhost:3030/assets/collaterals
 }
 ```
 
-### 4. For fetching all synthetic assets details
+### 4. For Fetching All Synthetic Assets Details
 
 ### Route /assets/synths
 
@@ -190,7 +190,7 @@ Url : http://localhost:3030/assets/synths
 ```
 
 
-### 5. For fetching system details
+### 5. For Fetching System Details
 
 ### Route /system
 
